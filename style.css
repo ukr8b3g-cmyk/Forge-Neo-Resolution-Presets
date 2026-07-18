@@ -45,6 +45,10 @@
 #fnp__img2img_container .fnp__user_row {
     min-height: 31px !important;
     align-content: center !important;
+    flex-wrap: nowrap !important;
+    height: 32.4px !important;
+    max-height: 32.4px !important;
+    overflow: visible !important;
 }
 
 #fnp__txt2img_container .fnp__profile_label,
@@ -230,6 +234,15 @@
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
+}
+
+#fnp__txt2img_container .fnp__current_info > .prose,
+#fnp__img2img_container .fnp__current_info > .prose {
+    height: 22.75px !important;
+    min-height: 22.75px !important;
+    max-height: 22.75px !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
 }
 
 #fnp__txt2img_container .fnp__manage_button,
