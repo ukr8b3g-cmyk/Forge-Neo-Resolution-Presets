@@ -1,0 +1,701 @@
+#fnp__txt2img_container,
+#fnp__img2img_container {
+    gap: 4px !important;
+    margin-top: 3px !important;
+    margin-bottom: 3px !important;
+}
+
+#fnp__txt2img_container .fnp__preset_row,
+#fnp__img2img_container .fnp__preset_row,
+#fnp__txt2img_container .fnp__extended_row,
+#fnp__img2img_container .fnp__extended_row,
+#fnp__txt2img_container .fnp__user_row,
+#fnp__img2img_container .fnp__user_row,
+#fnp__txt2img_container .fnp__ratio_row,
+#fnp__img2img_container .fnp__ratio_row {
+    align-items: center;
+    column-gap: 6px !important;
+    row-gap: 4px !important;
+    flex-wrap: wrap;
+}
+
+#fnp__txt2img_container .fnp__ratio_row,
+#fnp__img2img_container .fnp__ratio_row {
+    flex-wrap: nowrap !important;
+}
+
+#fnp__txt2img_container .fnp__preset_row > *,
+#fnp__img2img_container .fnp__preset_row > *,
+#fnp__txt2img_container .fnp__extended_row > *,
+#fnp__img2img_container .fnp__extended_row > *,
+#fnp__txt2img_container .fnp__user_row > *,
+#fnp__img2img_container .fnp__user_row > *,
+#fnp__txt2img_container .fnp__ratio_row > *,
+#fnp__img2img_container .fnp__ratio_row > * {
+    flex: 0 0 auto !important;
+}
+
+#fnp__txt2img_container .fnp__preset_row,
+#fnp__img2img_container .fnp__preset_row {
+    min-height: 69px !important;
+    align-content: center !important;
+}
+
+#fnp__txt2img_container .fnp__user_row,
+#fnp__img2img_container .fnp__user_row {
+    min-height: 31px !important;
+    align-content: center !important;
+}
+
+#fnp__txt2img_container .fnp__profile_label,
+#fnp__img2img_container .fnp__profile_label,
+#fnp__txt2img_container .fnp__user_count,
+#fnp__img2img_container .fnp__user_count,
+#fnp__txt2img_container .fnp__ratio_label,
+#fnp__img2img_container .fnp__ratio_label,
+#fnp__txt2img_container .fnp__ratio_basis,
+#fnp__img2img_container .fnp__ratio_basis,
+#fnp__txt2img_container .fnp__rounding_label,
+#fnp__img2img_container .fnp__rounding_label {
+    width: auto !important;
+    min-width: unset !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    color: var(--body-text-color-subdued) !important;
+    font-size: 0.85em !important;
+    white-space: nowrap !important;
+}
+
+#fnp__txt2img_container .fnp__profile_label,
+#fnp__img2img_container .fnp__profile_label {
+    margin-left: 0 !important;
+}
+
+#fnp__txt2img_container .fnp__profile_group,
+#fnp__img2img_container .fnp__profile_group {
+    align-items: center;
+    justify-content: flex-end !important;
+    gap: 6px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    margin-left: auto !important;
+    flex: 1 1 100% !important;
+    flex-wrap: wrap !important;
+    box-sizing: border-box !important;
+    overflow: visible !important;
+}
+
+#fnp__txt2img_container .fnp__profile_group button,
+#fnp__img2img_container .fnp__profile_group button {
+    padding: 4px 7px !important;
+    font-size: 0.8em !important;
+}
+
+#fnp__txt2img_container .fnp__profile_group > *,
+#fnp__img2img_container .fnp__profile_group > * {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    min-width: unset !important;
+    max-width: none !important;
+}
+
+#fnp__txt2img_container .fnp__profile,
+#fnp__img2img_container .fnp__profile {
+    width: 92px !important;
+    min-width: 92px !important;
+    max-width: 92px !important;
+    flex: 0 0 92px !important;
+}
+
+#fnp__txt2img_container .fnp__profile > label,
+#fnp__img2img_container .fnp__profile > label,
+#fnp__txt2img_container .fnp__profile .wrap,
+#fnp__img2img_container .fnp__profile .wrap {
+    margin: 0 !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    max-width: none !important;
+    box-sizing: border-box !important;
+}
+
+#fnp__txt2img_container .fnp__preset_button,
+#fnp__img2img_container .fnp__preset_button,
+#fnp__txt2img_container .fnp__user_button,
+#fnp__img2img_container .fnp__user_button,
+#fnp__txt2img_container .fnp__more_button,
+#fnp__img2img_container .fnp__more_button,
+#fnp__txt2img_container .fnp__randomize_button,
+#fnp__img2img_container .fnp__randomize_button,
+#fnp__txt2img_container .fnp__reset_button,
+#fnp__img2img_container .fnp__reset_button,
+#fnp__txt2img_container .fnp__undo_button,
+#fnp__img2img_container .fnp__undo_button,
+#fnp__txt2img_container .fnp__copy_button,
+#fnp__img2img_container .fnp__copy_button,
+#fnp__txt2img_container .fnp__manage_button,
+#fnp__img2img_container .fnp__manage_button,
+#fnp__txt2img_container .fnp__save_button,
+#fnp__img2img_container .fnp__save_button,
+#fnp__txt2img_container .fnp__delete_button,
+#fnp__img2img_container .fnp__delete_button,
+#fnp__txt2img_container .fnp__apply_button,
+#fnp__img2img_container .fnp__apply_button {
+    width: auto !important;
+    min-width: unset !important;
+    max-width: none !important;
+    padding: 5px 10px !important;
+    white-space: nowrap !important;
+}
+
+#fnp__txt2img_container .fnp__rotated_match,
+#fnp__img2img_container .fnp__rotated_match {
+    position: relative !important;
+    z-index: 2;
+}
+
+#fnp__txt2img_container .fnp__rotated_match button,
+#fnp__img2img_container .fnp__rotated_match button {
+    background: #3569d4 !important;
+    border: 1px solid #83aaff !important;
+    color: #ffffff !important;
+}
+
+#fnp__txt2img_container .fnp__rotated_match,
+#fnp__img2img_container .fnp__rotated_match {
+    background: #3569d4 !important;
+    border: 1px solid #83aaff !important;
+    color: #ffffff !important;
+}
+
+#fnp__txt2img_container .fnp__rotated_match::after,
+#fnp__img2img_container .fnp__rotated_match::after {
+    content: "Landscape equivalent";
+    position: absolute;
+    right: 0;
+    top: calc(100% + 4px);
+    z-index: 20;
+    padding: 3px 6px;
+    border: 1px solid #83aaff;
+    border-radius: 4px;
+    background: #17213a;
+    color: #ffffff;
+    font-size: 0.72em;
+    line-height: 1.2;
+    white-space: nowrap;
+    pointer-events: none;
+    opacity: 0;
+    transform: translateY(-2px);
+    transition: opacity 120ms ease, transform 120ms ease;
+}
+
+#fnp__txt2img_container .fnp__rotated_match:hover::after,
+#fnp__img2img_container .fnp__rotated_match:hover::after {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+#fnp__txt2img_container .fnp__preset_button button,
+#fnp__img2img_container .fnp__preset_button button,
+#fnp__txt2img_container .fnp__user_button button,
+#fnp__img2img_container .fnp__user_button button {
+    min-width: unset !important;
+}
+
+#fnp__txt2img_container .fnp__preset_button,
+#fnp__img2img_container .fnp__preset_button {
+    flex: 0 0 auto !important;
+}
+
+#fnp__txt2img_container .fnp__user_count,
+#fnp__img2img_container .fnp__user_count {
+    min-width: 52px !important;
+}
+
+#fnp__txt2img_container .fnp__more_button,
+#fnp__img2img_container .fnp__more_button {
+    padding: 4px 7px !important;
+    font-size: 0.78em !important;
+}
+
+#fnp__txt2img_container .fnp__current_info,
+#fnp__img2img_container .fnp__current_info {
+    width: 230px !important;
+    min-width: 230px !important;
+    max-width: 230px !important;
+    flex: 0 0 230px !important;
+    margin: 0 0 0 auto !important;
+    padding: 0 !important;
+    color: var(--body-text-color-subdued) !important;
+    font-size: 0.72em !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+}
+
+#fnp__txt2img_container .fnp__manage_button,
+#fnp__img2img_container .fnp__manage_button {
+    margin-left: auto !important;
+}
+
+#fnp__txt2img_container .fnp__manage_panel,
+#fnp__img2img_container .fnp__manage_panel {
+    gap: 4px !important;
+    margin: 0 !important;
+    padding: 5px 6px !important;
+    border-top: 1px solid var(--border-color-primary) !important;
+}
+
+#fnp__txt2img_container .fnp__manage_hint,
+#fnp__img2img_container .fnp__manage_hint {
+    margin: 0 !important;
+    padding: 0 !important;
+    color: var(--body-text-color-subdued) !important;
+    font-size: 0.8em !important;
+}
+
+#fnp__txt2img_container .fnp__manage_form,
+#fnp__img2img_container .fnp__manage_form,
+#fnp__txt2img_container .fnp__manage_row,
+#fnp__img2img_container .fnp__manage_row {
+    align-items: center;
+    gap: 6px !important;
+}
+
+#fnp__txt2img_container .fnp__name_input,
+#fnp__img2img_container .fnp__name_input {
+    flex: 1 1 240px !important;
+    width: auto !important;
+    min-width: 200px !important;
+}
+
+#fnp__txt2img_container .fnp__save_button,
+#fnp__img2img_container .fnp__save_button {
+    flex: 0 0 auto !important;
+    width: auto !important;
+}
+
+#fnp__txt2img_container .fnp__overwrite_button,
+#fnp__img2img_container .fnp__overwrite_button,
+#fnp__txt2img_container .fnp__export_button,
+#fnp__img2img_container .fnp__export_button,
+#fnp__txt2img_container .fnp__import_button,
+#fnp__img2img_container .fnp__import_button,
+#fnp__txt2img_container .fnp__merge_button,
+#fnp__img2img_container .fnp__merge_button {
+    flex: 0 0 auto !important;
+    width: auto !important;
+    padding: 4px 8px !important;
+}
+
+#fnp__txt2img_container .fnp__manage_label,
+#fnp__img2img_container .fnp__manage_label {
+    flex: 1 1 auto !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 0.85em !important;
+}
+
+#fnp__txt2img_container .fnp__transfer_row,
+#fnp__img2img_container .fnp__transfer_row,
+#fnp__txt2img_container .fnp__ratio_quick_row,
+#fnp__img2img_container .fnp__ratio_quick_row {
+    align-items: center;
+    gap: 6px !important;
+    flex-wrap: nowrap !important;
+}
+
+#fnp__txt2img_container .fnp__transfer_row > *,
+#fnp__img2img_container .fnp__transfer_row > *,
+#fnp__txt2img_container .fnp__ratio_quick_row > *,
+#fnp__img2img_container .fnp__ratio_quick_row > * {
+    flex: 0 0 auto !important;
+}
+
+#fnp__txt2img_container .fnp__import_file,
+#fnp__img2img_container .fnp__import_file {
+    flex: 0 0 auto !important;
+    width: 132px !important;
+    min-width: 132px !important;
+}
+
+#fnp__txt2img_container .fnp__export_file,
+#fnp__img2img_container .fnp__export_file {
+    margin: 2px 0 0 !important;
+    padding: 0 !important;
+    font-size: 0.8em !important;
+}
+
+#fnp__txt2img_container .fnp__ratio_quick_label,
+#fnp__img2img_container .fnp__ratio_quick_label {
+    width: auto !important;
+    min-width: unset !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    color: var(--body-text-color-subdued) !important;
+    font-size: 0.8em !important;
+    white-space: nowrap !important;
+}
+
+#fnp__txt2img_container .fnp__ratio_quick_button,
+#fnp__img2img_container .fnp__ratio_quick_button {
+    width: 44px !important;
+    min-width: 44px !important;
+    padding: 4px 6px !important;
+    white-space: nowrap !important;
+}
+
+#fnp__txt2img_container .fnp__status,
+#fnp__img2img_container .fnp__status {
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 0.8em !important;
+}
+
+#fnp__txt2img_container .fnp__ratio_accordion,
+#fnp__img2img_container .fnp__ratio_accordion {
+    margin-top: 2px !important;
+}
+
+#fnp__txt2img_container .fnp__ratio_input,
+#fnp__img2img_container .fnp__ratio_input {
+    width: 74px !important;
+    min-width: 74px !important;
+}
+
+#fnp__txt2img_container .fnp__rounding,
+#fnp__img2img_container .fnp__rounding {
+    width: 58px !important;
+    min-width: 58px !important;
+}
+
+#fnp__txt2img_container .fnp__ratio_result,
+#fnp__img2img_container .fnp__ratio_result {
+    min-width: 72px !important;
+    margin: 0 0 0 auto !important;
+    padding: 0 !important;
+    font-size: 0.9em !important;
+    white-space: nowrap !important;
+}
+
+#fnp__txt2img_container .fnp__path_note,
+#fnp__img2img_container .fnp__path_note {
+    margin: 1px 0 0 !important;
+    padding: 0 2px !important;
+    color: var(--body-text-color-subdued) !important;
+    font-size: 0.72em !important;
+    line-height: 1.2 !important;
+}
+
+#fnp__txt2img_container .fnp__ratio_accordion > .label-wrap,
+#fnp__img2img_container .fnp__ratio_accordion > .label-wrap {
+    min-height: 30px !important;
+}
+
+/* Settings page: scoped to the extension's custom option only. */
+#fnp_settings_editor {
+    width: 100%;
+}
+
+#fnp_settings_editor .fnp-settings-app {
+    color: var(--body-text-color);
+    max-width: 1100px;
+    padding: 0.5rem 0;
+}
+
+#fnp_settings_editor .fnp-settings-status {
+    min-height: 1.4em;
+    margin: 0 0 0.5rem;
+    color: var(--body-text-color-subdued);
+}
+
+#fnp_settings_editor .fnp-settings-status.saved {
+    color: #a9d7b2;
+}
+
+#fnp_settings_editor .fnp-settings-status.dirty {
+    color: #ffbf69;
+}
+
+#fnp_settings_editor .fnp-settings-status.error,
+#fnp_settings_editor .fnp-settings-row-error,
+#fnp_settings_editor .fnp-settings-dialog-error {
+    color: #ff9b9b;
+}
+
+#fnp_settings_editor details {
+    margin: 0 0 0.75rem;
+    border: 1px solid var(--border-color-primary);
+    border-radius: 0.4rem;
+    padding: 0.55rem 0.75rem 0.7rem;
+}
+
+#fnp_settings_editor summary {
+    cursor: pointer;
+    font-weight: 600;
+}
+
+#fnp_settings_editor .fnp-settings-definition,
+#fnp_settings_editor .fnp-settings-helper,
+#fnp_settings_editor .fnp-settings-path,
+#fnp_settings_editor .fnp-settings-empty {
+    color: var(--body-text-color-subdued);
+    font-size: 0.84em;
+}
+
+#fnp_settings_editor .fnp-settings-definition {
+    margin-top: 0.35rem;
+}
+
+#fnp_settings_editor .fnp-settings-helper,
+#fnp_settings_editor .fnp-settings-path {
+    margin-top: 0.35rem;
+}
+
+#fnp_settings_editor .fnp-settings-path {
+    font-size: 0.76em;
+    opacity: 0.9;
+}
+
+#fnp_settings_editor .fnp-settings-toolbar,
+#fnp_settings_editor .fnp-settings-actions,
+#fnp_settings_editor .fnp-settings-backup-row,
+#fnp_settings_editor .fnp-settings-profile-actions,
+#fnp_settings_editor .fnp-settings-save-group {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem;
+    margin-top: 0.6rem;
+}
+
+#fnp_settings_editor .fnp-settings-profile-toolbar {
+    row-gap: 0.35rem;
+}
+
+#fnp_settings_editor .fnp-settings-profile-actions {
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+#fnp_settings_editor .fnp-settings-save-group {
+    flex-direction: column;
+    align-items: flex-end;
+    margin-top: 0;
+}
+
+#fnp_settings_editor label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+#fnp_settings_editor select,
+#fnp_settings_editor input[type="number"],
+#fnp_settings_editor input[type="text"] {
+    min-height: 2rem;
+    border: 1px solid var(--input-border-color);
+    border-radius: 0.3rem;
+    background: var(--input-background-fill);
+    color: var(--body-text-color);
+    padding: 0.25rem 0.45rem;
+}
+
+#fnp_settings_editor select {
+    min-width: 12rem;
+}
+
+#fnp_settings_editor input[type="number"] {
+    width: 7rem;
+}
+
+#fnp_settings_editor button {
+    min-height: 2rem;
+    border: 1px solid var(--button-secondary-border-color);
+    border-radius: 0.3rem;
+    background: var(--button-secondary-background-fill);
+    color: var(--button-secondary-text-color);
+    padding: 0.25rem 0.6rem;
+    cursor: pointer;
+}
+
+#fnp_settings_editor button.primary {
+    background: var(--button-primary-background-fill);
+    color: var(--button-primary-text-color);
+}
+
+#fnp_settings_editor button.warning {
+    border-color: #b47b2c;
+    background: rgba(180, 123, 44, 0.2);
+}
+
+#fnp_settings_editor button.danger-outline {
+    border-color: #b84b4b;
+    background: rgba(184, 75, 75, 0.18);
+    color: #ffd0d0;
+}
+
+#fnp_settings_editor button:disabled {
+    cursor: not-allowed;
+    opacity: 0.45;
+}
+
+#fnp_settings_editor button:focus-visible,
+#fnp_settings_editor input:focus-visible,
+#fnp_settings_editor select:focus-visible,
+#fnp_settings_editor .fnp-settings-preset-row:focus-visible {
+    outline: 2px solid var(--button-primary-background-fill);
+    outline-offset: 2px;
+}
+
+#fnp_settings_editor .fnp-settings-column-head {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 0.75rem;
+    color: var(--body-text-color-subdued);
+    font-size: 0.78em;
+}
+
+#fnp_settings_editor .fnp-settings-preset-row {
+    display: grid;
+    grid-template-columns: 1.4rem 4.5rem 7rem 1.2rem 7rem max-content max-content;
+    align-items: center;
+    gap: 0.4rem;
+    margin-top: 0.45rem;
+}
+
+#fnp_settings_editor .fnp-settings-preset-row[draggable="true"] {
+    cursor: grab;
+}
+
+#fnp_settings_editor .fnp-settings-preset-row.dragging {
+    opacity: 0.55;
+}
+
+#fnp_settings_editor .fnp-settings-preset-row.invalid input {
+    border-color: #b84b4b;
+}
+
+#fnp_settings_editor .fnp-settings-row-error {
+    grid-column: 2 / -1;
+    margin-top: -0.2rem;
+    font-size: 0.76em;
+}
+
+#fnp_settings_editor .fnp-settings-drag {
+    color: var(--body-text-color-subdued);
+    font-size: 1.1rem;
+    text-align: center;
+}
+
+#fnp_settings_editor .fnp-settings-slot {
+    color: var(--body-text-color-subdued);
+    font-size: 0.85em;
+}
+
+#fnp_settings_editor .fnp-settings-preset-row button {
+    width: max-content;
+    min-width: 0;
+    justify-self: start;
+    white-space: nowrap;
+}
+
+#fnp_settings_editor .fnp-settings-check {
+    display: flex;
+    margin-top: 0.55rem;
+}
+
+#fnp_settings_editor .fnp-settings-history-row {
+    display: grid;
+    grid-template-columns: 8rem 1fr auto;
+    gap: 0.6rem;
+    align-items: center;
+    padding: 0.35rem 0;
+    border-bottom: 1px solid var(--border-color-primary);
+}
+
+#fnp_settings_editor .fnp-settings-history-row small {
+    color: var(--body-text-color-subdued);
+}
+
+#fnp_settings_editor .fnp-settings-dialog[hidden] {
+    display: none;
+}
+
+#fnp_settings_editor .fnp-settings-dialog {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: grid;
+    place-items: center;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.6);
+}
+
+#fnp_settings_editor .fnp-settings-dialog-panel {
+    width: min(28rem, 100%);
+    padding: 1rem;
+    border: 1px solid var(--border-color-primary);
+    border-radius: 0.45rem;
+    background: var(--background-fill-primary);
+    box-shadow: 0 0.8rem 2rem rgba(0, 0, 0, 0.35);
+}
+
+#fnp_settings_editor .fnp-settings-dialog-panel h3 {
+    margin: 0 0 0.8rem;
+}
+
+#fnp_settings_editor .fnp-settings-dialog-panel label {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+#fnp_settings_editor .fnp-settings-dialog-panel input {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+#fnp_settings_editor .fnp-settings-dialog-error {
+    min-height: 1.3em;
+    margin-top: 0.45rem;
+    font-size: 0.84em;
+}
+
+#fnp_settings_editor .fnp-settings-dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.45rem;
+    margin-top: 0.75rem;
+}
+
+@media (max-width: 800px) {
+    #fnp_settings_editor .fnp-settings-preset-row {
+        grid-template-columns: 1.4rem 4rem minmax(4.5rem, 1fr) 1.2rem minmax(4.5rem, 1fr) max-content max-content;
+    }
+
+    #fnp_settings_editor .fnp-settings-history-row {
+        grid-template-columns: 1fr;
+        gap: 0.15rem;
+    }
+}
+
+@media (max-width: 560px) {
+    #fnp_settings_editor .fnp-settings-profile-actions {
+        flex-direction: column;
+    }
+
+    #fnp_settings_editor .fnp-settings-save-group {
+        align-items: flex-start;
+        margin-top: 0.25rem;
+    }
+
+    #fnp_settings_editor .fnp-settings-profile-toolbar label {
+        width: 100%;
+    }
+
+    #fnp_settings_editor .fnp-settings-profile-toolbar select {
+        min-width: 0;
+        flex: 1;
+    }
+}

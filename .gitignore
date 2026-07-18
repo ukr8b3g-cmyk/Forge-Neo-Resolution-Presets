@@ -1,0 +1,10 @@
+__pycache__/
+*.py[cod]
+data/user_presets.json
+data/user_presets-export.json
+data/last_profiles.json
+data/backups/
+data/profile_overrides.json
+data/behavior_settings.json
+data/resolution_history.json
+data/profile_backups/

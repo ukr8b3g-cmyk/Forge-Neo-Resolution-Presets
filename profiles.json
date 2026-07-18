@@ -1,0 +1,60 @@
+{
+  "default_profile": "Anima",
+  "profiles": [
+    {
+      "name": "Anima",
+      "presets": [
+        {"width": 1024, "height": 1024},
+        {"width": 1280, "height": 1280},
+        {"width": 896, "height": 1152},
+        {"width": 1024, "height": 1344},
+        {"width": 960, "height": 1280},
+        {"width": 832, "height": 1152},
+        {"width": 832, "height": 1216},
+        {"width": 1024, "height": 1536},
+        {"width": 768, "height": 1280},
+        {"width": 1136, "height": 1424},
+        {"width": 1104, "height": 1472},
+        {"width": 1040, "height": 1552},
+        {"width": 960, "height": 1696}
+      ]
+    },
+    {
+      "name": "SDXL",
+      "presets": [
+        {"width": 1024, "height": 1024},
+        {"width": 1280, "height": 1280},
+        {"width": 896, "height": 1152},
+        {"width": 1024, "height": 1344},
+        {"width": 960, "height": 1280},
+        {"width": 832, "height": 1152},
+        {"width": 1024, "height": 1536},
+        {"width": 768, "height": 1280},
+        {"width": 768, "height": 1344},
+        {"width": 1136, "height": 1424},
+        {"width": 1104, "height": 1472},
+        {"width": 1040, "height": 1552},
+        {"width": 960, "height": 1696}
+      ]
+    },
+    {
+      "name": "Flux",
+      "presets": [
+        {"width": 1024, "height": 1024},
+        {"width": 1280, "height": 1280},
+        {"width": 896, "height": 1152},
+        {"width": 1024, "height": 1344},
+        {"width": 960, "height": 1280},
+        {"width": 832, "height": 1152},
+        {"width": 832, "height": 1216},
+        {"width": 1024, "height": 1536},
+        {"width": 768, "height": 1280},
+        {"width": 1136, "height": 1424},
+        {"width": 1104, "height": 1472},
+        {"width": 1040, "height": 1552},
+        {"width": 960, "height": 1696},
+        {"width": 768, "height": 1344}
+      ]
+    }
+  ]
+}
