@@ -27,18 +27,36 @@ Forge-Neo/extensions/Forge-Neo-Resolution-Presets
 
 配置後、Forge Neoを再起動してください。
 
-## Profileの編集
+## 設定タブ
 
-`profiles.json`は標準Profileの読み取り専用データです。画面から編集する場合は、`Settings` → `Extensions` → `Resolution Presets` → `Profile Editor`を開いてください。
+![Forge NeoのSettingsタブ - Profile Editor](docs/profile-editor-settings.png)
 
-- `New profile`は小さな入力欄で名前を付けて作成します。`Duplicate profile`は選択中Profileを複製します。
-- `Width`／`Height`は直接編集でき、行をドラッグすると順番を変更できます。先頭9件が`Main`、10件目以降が`More Portrait`です。
-- 行の`Duplicate`／`Delete`はPresetだけを対象にします。Profile全体を操作するときは、上部の`Duplicate profile`／`Delete profile`を使います。
-- 編集内容はブラウザ上のDraftです。`Save changes`を押すまでファイルへ反映されません。保存前は`Unsaved changes`と表示されます。
-- 保存時は既存のProfileを自動バックアップし、`data/profile_overrides.json`へ保存します。保存後に`Reload UI`を押すとtxt2img／img2imgへ反映されます。
-- `Restore built-in profiles`は編集中のDraftを失うため確認が表示されます。`Delete profile`も確認が表示され、最後の1件は削除できません。
+`Settings` → `Extensions` → `Resolution Presets`を開くと、Profileの編集と拡張機能データの管理ができます。この設定ページはForge Neo標準のWidth／Height入力を置き換えません。保存したProfileを`Reload UI`で再読み込みすると、txt2img／img2imgへ反映されます。
 
-未保存のDraftがある状態で`Reload UI`またはページ再読み込みを行うと、編集内容が失われる警告が表示されます。
+### Profile Editor
+
+`profiles.json`は標準Profileの読み取り専用データです。エディターの変更は`Save changes`を押すまでブラウザ上のDraftとして保持されます。
+
+- `New profile`は名前を入力してProfileを作成します。`Duplicate profile`は選択中Profileを複製し、`Delete profile`は確認後に削除します。最後の1件は削除できません。
+- `Width`／`Height`は直接編集できます。値は16～16384の整数、8の倍数で、同じProfile内で重複しない必要があります。
+- ↕ハンドルをドラッグすると行の順番を変更できます。フォーカス中の行は`Alt`＋`↑`／`↓`でも移動できます。先頭9件が`Main`、10件目以降が`More Portrait`です。
+- 行の`Duplicate`／`Delete`はPresetだけを対象にします。Profile全体を操作するときは上部のProfile操作ボタンを使います。
+- `Save changes`はDraftを検証し、既存Profileを自動バックアップして`data/profile_overrides.json`へ保存します。保存後に`Reload UI`を押すとtxt2img／img2imgへ反映されます。
+- `Restore built-in profiles`はDraftを破棄するため確認が表示されます。未保存Draftがある状態でUIまたはページを再読み込みした場合も、編集内容が失われる警告が表示されます。
+
+### Backup / Restore
+
+`Create backup`は現在のProfile設定を`data/profile_backups/`へ保存します。バックアップを選択して`Restore selected`を押すと復元できます。復元後も、メインタブへ反映するには`Reload UI`が必要です。
+
+### Randomize設定
+
+- `Start Randomize ON`は、UI再読み込み後にメインタブの`Randomize`を最初から有効にするかを設定します。
+- `Include custom presets`を有効にすると、生成ごとのランダム選択にユーザープリセットも含められます。初期状態はオフです。
+- `Save Randomize settings`を押してからUIを再読み込みすると、初期状態の設定が反映されます。
+
+### Resolution History
+
+履歴パネルには、最近の解像度変更を解像度、Profile、タブ、日時とともに表示します。`Clear history`でローカルの履歴ファイル（`data/resolution_history.json`）を削除できます。
 
 ユーザープリセットは実行時に`data/user_presets.json`へ保存されます。保存・削除の前に、既存ファイルは`data/backups/`へバックアップされます。
 
@@ -64,7 +82,7 @@ Forge-Neo/extensions/Forge-Neo-Resolution-Presets
 - 現在一致している固定プリセットを押すと向きを切り替えます。オレンジは青色の横向きへ、青色はオレンジの縦向きへ戻ります。
 - Profileを変更しても、現在の解像度は自動変更しません。
 - `More Portrait`を押すと、通常表示の高さを増やさず追加の縦長プリセットを表示します。
-- `Randomize`を押すと強調表示になり、有効中は現在のProfileの固定プリセットから生成ごとに1件を選びます。もう一度押すと無効になります。初期仕様ではユーザープリセットは対象外です。
+- `Randomize`を押すと強調表示になり、有効中は現在のProfileから生成ごとに1件を選びます。初期状態ではユーザープリセットを除外し、設定タブの`Include custom presets`を有効にした場合だけ対象に含めます。もう一度押すと無効になります。
 - `Reset`は標準Profileの先頭である`1024×1024`へ戻します。`Undo`は直前のプリセット／Reset前の解像度へ戻します。`Copy`は現在のWidth×Heightをクリップボードへコピーします。
 - 固定プリセットは正方形・縦長のみです。横長へ切り替える場合は、Forge Neo標準のWidth／Height入れ替えボタンを使用します。
 - `1024×1536`、`960×1280`、`832×1152`、`768×1280`は、混在アスペクト比で使いやすい汎用的な縦長候補です。すべてのチェックポイントで最適とは限りません。
