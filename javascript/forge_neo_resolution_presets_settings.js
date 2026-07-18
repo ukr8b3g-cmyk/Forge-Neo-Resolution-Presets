@@ -417,18 +417,8 @@
   };
 
   const scan = () => document.querySelectorAll("#fnp_settings_editor").forEach(initialize);
-  const selectSettingsSection = () => {
-    const settings = document.querySelector("#settings");
-    if (!settings || settings.dataset.fnpSectionSelected === "true") return;
-    const button = Array.from(settings.querySelectorAll(":scope > div.tab-nav > button"))
-      .find(item => item.textContent.trim() === "Resolution Presets");
-    if (!button) return;
-    button.click();
-    settings.dataset.fnpSectionSelected = "true";
-  };
   const ready = () => {
     scan();
-    selectSettingsSection();
   };
   if (typeof onUiLoaded === "function") onUiLoaded(ready);
   else if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", ready, {once: true});
