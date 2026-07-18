@@ -1,5 +1,5 @@
 # Forge Neo Resolution Presets
-<img width="894" height="198" alt="{2709BEAF-9752-4294-83C1-8CB54D9CB202}" src="https://github.com/user-attachments/assets/5b5571b7-b413-476a-9229-1cd1d58cbcbb" />
+![Forge Neo Resolution Presets tab](docs/resolution-presets-tab.png)
 
 [日本語版 / Japanese](README_ja.md)
 
