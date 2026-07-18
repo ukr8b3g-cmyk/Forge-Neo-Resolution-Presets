@@ -28,18 +28,36 @@ Forge-Neo/extensions/Forge-Neo-Resolution-Presets
 
 Restart Forge Neo or use the Extensions restart action.
 
-## Configuration
+## Settings tab
 
-`profiles.json` contains the read-only built-in profiles. For visual editing, open `Settings` → `Extensions` → `Resolution Presets` → `Profile Editor`.
+![Forge Neo Settings - Profile Editor](docs/profile-editor-settings.png)
 
-- `New profile` opens a small name editor. `Duplicate profile` copies the selected Profile.
-- Edit `Width`/`Height` directly and drag rows to reorder them. The first 9 presets are `Main`; later entries are `More Portrait`.
-- Row `Duplicate`/`Delete` affects a Preset only. Use the profile-labeled buttons for Profile-level operations.
-- Edits are a browser-side Draft. Nothing is written until `Save changes`; the status shows `Unsaved changes` while editing.
-- Saving creates an automatic backup and writes `data/profile_overrides.json`. Use `Reload UI` afterward to apply the saved Profile to txt2img/img2img.
-- `Restore built-in profiles` warns before discarding the Draft. `Delete profile` also confirms, and the last Profile cannot be deleted.
+Open `Settings` → `Extensions` → `Resolution Presets` to edit Profiles and manage extension data. The Settings page does not replace Forge Neo's native Width/Height controls; changes are applied to txt2img/img2img after the saved Profile is reloaded.
 
-Reloading the UI or page while a Draft is unsaved shows a warning because the edits will be lost.
+### Profile Editor
+
+`profiles.json` contains the read-only built-in Profiles. The editor keeps changes as a browser-side Draft until `Save changes` is clicked.
+
+- `New profile` opens a name editor. `Duplicate profile` copies the selected Profile, while `Delete profile` removes it after confirmation. The last Profile cannot be deleted.
+- Edit `Width`/`Height` directly. Values must be integers between 16 and 16384, multiples of 8, and unique within a Profile.
+- Drag the ↕ handle to reorder rows. `Alt`+`↑`/`↓` also moves the focused row. The first 9 presets are `Main`; later entries are `More Portrait`.
+- Row `Duplicate`/`Delete` affects a Preset only. Use the Profile toolbar for Profile-level operations.
+- `Save changes` validates the Draft, creates an automatic backup, and writes `data/profile_overrides.json`. Use `Reload UI` afterward to apply the saved Profile to txt2img/img2img.
+- `Restore built-in profiles` warns before discarding the Draft. An unsaved Draft is also protected by a warning when the UI or page is reloaded.
+
+### Backup / Restore
+
+`Create backup` saves the current Profile configuration in `data/profile_backups/`. Select a backup and click `Restore selected` to restore it; the restored Profile still requires `Reload UI` before it appears in the main tabs.
+
+### Randomize settings
+
+- `Start Randomize ON` controls whether the main-tab `Randomize` mode starts enabled after a UI reload.
+- `Include custom presets` allows User presets to participate in per-generation randomization. It is off by default.
+- Click `Save Randomize settings`, then reload the UI to apply the initial-state setting.
+
+### Resolution History
+
+The history panel records recent resolution changes with the resolution, Profile, tab, and timestamp. `Clear history` removes the local history file (`data/resolution_history.json`).
 
 User presets are stored at runtime in `data/user_presets.json`. Existing files are backed up in `data/backups/` before each save or delete operation.
 
@@ -66,7 +84,7 @@ Paths are relative to the extension root (`Forge-Neo-Resolution-Presets/`):
 - Clicking the matching built-in preset toggles its orientation: orange switches to the blue landscape rotation, and blue switches back to the portrait value.
 - Changing Profile changes the available built-in buttons but does not automatically change the current resolution.
 - `More Portrait` reveals the extra portrait presets without increasing the default height.
-- `Randomize` changes to a highlighted state; while enabled, one built-in preset from the current Profile is selected for each generation. Click it again to disable it. User presets are not randomized.
+- `Randomize` changes to a highlighted state; while enabled, one preset from the current Profile is selected for each generation. User presets are excluded by default; enable `Include custom presets` in the Settings tab to include them. Click `Randomize` again to disable it.
 - `Reset` applies `1024x1024` (the first preset in the shipped Profiles). `Undo` restores the resolution before the last preset/reset action. `Copy` copies the current Width×Height text.
 - Built-in presets contain square and portrait dimensions only. Use Forge Neo's native Width/Height swap control for landscape orientation.
 - `1024x1536`, `960x1280`, `832x1152`, and `768x1280` are general portrait candidates based on mixed-aspect-ratio use; they are not guaranteed to be optimal for every checkpoint.
