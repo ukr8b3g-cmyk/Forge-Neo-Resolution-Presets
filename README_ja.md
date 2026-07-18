@@ -30,6 +30,8 @@ Forge-Neo/extensions/Forge-Neo-Resolution-Presets
 配置後、Forge Neoを再起動してください。
 
 ## Profileの編集
+![Uploading {0AFF7677-BD04-4CBA-81D5-FA434B5F94D2}.png…]()
+
 
 `profiles.json`は標準Profileの読み取り専用データです。画面から編集する場合は、`Settings` → `Extensions` → `Resolution Presets` → `Profile Editor`を開いてください。
 
