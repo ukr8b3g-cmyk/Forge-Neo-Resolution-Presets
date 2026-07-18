@@ -1,7 +1,5 @@
 # Forge Neo Resolution Presets
 <img width="894" height="198" alt="{2709BEAF-9752-4294-83C1-8CB54D9CB202}" src="https://github.com/user-attachments/assets/5b5571b7-b413-476a-9229-1cd1d58cbcbb" />
-<img width="1120" height="1011" alt="{0AFF7677-BD04-4CBA-81D5-FA434B5F94D2}" src="https://github.com/user-attachments/assets/144ed352-6966-4576-ac3a-483f2a04b9a5" />
-
 
 [日本語版 / Japanese](README_ja.md)
 
@@ -50,7 +48,7 @@ User presets are stored at runtime in `data/user_presets.json`. Existing files a
 Paths are relative to the extension root (`Forge-Neo-Resolution-Presets/`):
 
 - Built-in model profiles and presets: `profiles.json`
-- User presets: `data/user_presets.json`<img width="1120" height="1011" alt="{0AFF7677-BD04-4CBA-81D5-FA434B5F94D2}" src="https://github.com/user-attachments/assets/ada56558-7d75-4fc5-83f0-2a6b5eefff48" />
+- User presets: `data/user_presets.json`
 
 - Last selected Profile per tab: `data/last_profiles.json`
 - Export file: `data/user_presets-export.json`
