@@ -1,4 +1,5 @@
 # Forge Neo Resolution Presets
+<img width="894" height="198" alt="{2709BEAF-9752-4294-83C1-8CB54D9CB202}" src="https://github.com/user-attachments/assets/5b5571b7-b413-476a-9229-1cd1d58cbcbb" />
 
 [日本語版 / Japanese](README_ja.md)
 
@@ -66,6 +67,7 @@ Paths are relative to the extension root (`Forge-Neo-Resolution-Presets/`):
 
 - Built-in model profiles and presets: `profiles.json`
 - User presets: `data/user_presets.json`
+
 - Last selected Profile per tab: `data/last_profiles.json`
 - Export file: `data/user_presets-export.json`
 - User-preset backups: `data/backups/`
