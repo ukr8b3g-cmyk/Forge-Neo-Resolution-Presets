@@ -4,9 +4,16 @@
 
 [English version](README.md)
 
-この拡張のドキュメントは英語と日本語に対応しています。UIはコンパクトな英語ラベルを使用し、Forge Neoの既存UIの言語・テーマに合わせて表示されます。
+この拡張のドキュメントは英語と日本語に対応しています。UIはコンパクトな英語ラベルを使用し、使用中のWebUIの言語・テーマに合わせて表示されます。
 
-Forge Neoのtxt2img／img2img向け、コンパクトな解像度プリセット拡張です。
+Forge Neo／reForgeのtxt2img・img2img向け、コンパクトな解像度プリセット拡張です。
+
+## 対応環境
+
+- Forge Neo：動作確認済み
+- reForge：動作確認済み
+
+両環境でUI表示、プリセット選択、縦横反転時の色切替、`Copy`動作を確認済みです。
 
 ## 機能
 
@@ -21,13 +28,13 @@ Forge Neoのtxt2img／img2img向け、コンパクトな解像度プリセット
 
 ## 配置
 
-このフォルダを次へ配置します。
+このフォルダをWebUIの`extensions`フォルダへ配置します。
 
 ```text
-Forge-Neo/extensions/Forge-Neo-Resolution-Presets
+<webui-root>/extensions/Forge-Neo-Resolution-Presets
 ```
 
-配置後、Forge Neoを再起動してください。
+配置後、Forge NeoまたはreForgeを再起動してください。
 
 ## 設定タブ
 
@@ -107,3 +114,7 @@ Forge-Neo/extensions/Forge-Neo-Resolution-Presets
 現在のWidth×Heightの総画素数を基準に、入力したアスペクト比に合うWidth／Heightを計算します。`Round`は8／16／32／64単位の丸め幅です。`Apply`を押すまでWidth／Heightは変更しません。モデル解析やアップスケールを行う機能ではありません。
 
 `Quick`の比率ボタンは、入力欄へ代表的な比率をワンクリックで設定します。
+
+## ライセンス
+
+MIT Licenseです。詳細は[LICENSE](LICENSE)を参照してください。

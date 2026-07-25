@@ -3,9 +3,16 @@
 
 [日本語版 / Japanese](README_ja.md)
 
-Documentation is available in English and Japanese. The extension UI uses compact English labels and Forge Neo's existing UI language/theme.
+Documentation is available in English and Japanese. The extension UI uses compact English labels and the host WebUI's existing language/theme.
 
-Compact resolution presets for Forge Neo txt2img and img2img.
+Compact resolution presets for Forge Neo and reForge txt2img and img2img.
+
+## Compatibility
+
+- Forge Neo: verified
+- reForge: verified
+
+UI rendering, preset selection, portrait/landscape color switching, and `Copy` have been tested successfully in both environments.
 
 ## Features
 
@@ -20,13 +27,13 @@ Compact resolution presets for Forge Neo txt2img and img2img.
 
 ## Install
 
-Copy this folder into:
+Copy this folder into the WebUI's `extensions` directory:
 
 ```text
-Forge-Neo/extensions/Forge-Neo-Resolution-Presets
+<webui-root>/extensions/Forge-Neo-Resolution-Presets
 ```
 
-Restart Forge Neo or use the Extensions restart action.
+Restart Forge Neo or reForge after installation.
 
 ## Settings tab
 
@@ -105,3 +112,7 @@ User presets and the remembered Profile are local files only. They are not uploa
 ## Advanced Ratio Calculator
 
 The calculator keeps the current total pixel area as the basis, calculates dimensions for the entered aspect ratio, and rounds them to the selected grid. It does not change Width/Height until `Apply` is clicked. It is an optional helper, not model analysis or upscaling. The `Quick` ratio buttons fill common aspect ratios into the calculator with one click.
+
+## License
+
+MIT License. See [LICENSE](LICENSE).

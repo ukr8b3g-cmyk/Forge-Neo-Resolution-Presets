@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import inspect
 import json
 import math
 import os
@@ -36,6 +37,23 @@ MIN_DIMENSION = 16
 MAX_DIMENSION = 16384
 DEFAULT_ROUNDING = 8
 MAX_HISTORY = 12
+
+
+def register_click_compatible(component, *, js_code=None, **kwargs):
+    """Register a click handler across Gradio variants using js or _js."""
+    parameters = inspect.signature(component.click).parameters
+
+    if js_code is not None:
+        if "js" in parameters:
+            kwargs["js"] = js_code
+        elif "_js" in parameters:
+            kwargs["_js"] = js_code
+        else:
+            raise TypeError(
+                "This Gradio click handler supports neither 'js' nor '_js'."
+            )
+
+    return component.click(**kwargs)
 
 
 def _default_profiles() -> dict[str, Any]:
@@ -279,6 +297,19 @@ def _same_resolution(width: Any, height: Any, current_width: Any, current_height
         return False
 
 
+def _preset_button_variant(
+    width: Any,
+    height: Any,
+    current_width: Any,
+    current_height: Any,
+) -> str:
+    if _same_resolution(width, height, current_width, current_height):
+        return "primary"
+    if _same_resolution(height, width, current_width, current_height):
+        return "stop"
+    return "secondary"
+
+
 def _current_info(width: Any, height: Any) -> str:
     try:
         width_value = int(width)
@@ -304,12 +335,8 @@ def _button_update(
     label: str,
     visible: bool = True,
     variant: str = "secondary",
-    elem_classes: list[str] | None = None,
 ) -> dict[str, Any]:
-    update = gr.update(value=label, visible=visible, variant=variant)
-    if elem_classes is not None:
-        update["elem_classes"] = elem_classes
-    return update
+    return gr.update(value=label, visible=visible, variant=variant)
 
 
 def _refresh_user_controls(
@@ -435,18 +462,15 @@ class ForgeNeoResolutionPresets(scripts.Script):
             for index in range(start, start + count):
                 if index < len(values):
                     width, height = values[index]
-                    exact = _same_resolution(width, height, current_width, current_height)
-                    rotated = not exact and _same_resolution(
-                        height, width, current_width, current_height
-                    )
-                    classes = ["fnp__preset_button"]
-                    if rotated:
-                        classes.append("fnp__rotated_match")
                     updates.append(
                         _button_update(
                             f"{width}×{height}",
-                            variant="primary" if exact else "secondary",
-                            elem_classes=classes,
+                            variant=_preset_button_variant(
+                                width,
+                                height,
+                                current_width,
+                                current_height,
+                            ),
                         )
                     )
                 else:
@@ -454,7 +478,6 @@ class ForgeNeoResolutionPresets(scripts.Script):
                         _button_update(
                             "",
                             visible=False,
-                            elem_classes=["fnp__preset_button"],
                         )
                     )
             return updates
@@ -478,18 +501,20 @@ class ForgeNeoResolutionPresets(scripts.Script):
                 for index in range(MAX_CORE_PRESETS):
                     initial = profiles[selected_profile][index] if index < len(profiles[selected_profile]) else None
                     label = f"{initial[0]}×{initial[1]}" if initial else ""
-                    exact = initial and _same_resolution(
-                        initial[0], initial[1], initial_width, initial_height
-                    )
-                    rotated = initial and not exact and _same_resolution(
-                        initial[1], initial[0], initial_width, initial_height
-                    )
                     button = gr.Button(
                         label,
                         visible=initial is not None,
-                        variant="primary" if exact else "secondary",
-                        elem_classes=["fnp__preset_button"]
-                        + (["fnp__rotated_match"] if rotated else []),
+                        variant=(
+                            _preset_button_variant(
+                                initial[0],
+                                initial[1],
+                                initial_width,
+                                initial_height,
+                            )
+                            if initial
+                            else "secondary"
+                        ),
+                        elem_classes=["fnp__preset_button"],
                     )
                     preset_buttons.append(button)
 
@@ -534,25 +559,16 @@ class ForgeNeoResolutionPresets(scripts.Script):
                             f"{initial[0]}×{initial[1]}" if initial else "",
                             visible=initial is not None,
                             variant=(
-                                "primary"
-                                if initial
-                                and _same_resolution(
-                                    initial[0], initial[1], initial_width, initial_height
+                                _preset_button_variant(
+                                    initial[0],
+                                    initial[1],
+                                    initial_width,
+                                    initial_height,
                                 )
+                                if initial
                                 else "secondary"
                             ),
-                            elem_classes=["fnp__preset_button", "fnp__extended_button"]
-                            + (
-                                ["fnp__rotated_match"]
-                                if initial
-                                and not _same_resolution(
-                                    initial[0], initial[1], initial_width, initial_height
-                                )
-                                and _same_resolution(
-                                    initial[1], initial[0], initial_width, initial_height
-                                )
-                                else []
-                            ),
+                            elem_classes=["fnp__preset_button", "fnp__extended_button"],
                         )
                     )
 
@@ -861,11 +877,12 @@ class ForgeNeoResolutionPresets(scripts.Script):
             show_progress="hidden",
         )
 
-        copy_button.click(
+        register_click_compatible(
+            copy_button,
             fn=None,
             inputs=[width_component, height_component],
             outputs=[],
-            js="(width, height) => { navigator.clipboard?.writeText(`${width}×${height}`); }",
+            js_code="(width, height) => { navigator.clipboard?.writeText(`${width}×${height}`); }",
         )
 
         user_outputs: list[Any] = [user_count]

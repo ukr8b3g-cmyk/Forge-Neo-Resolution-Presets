@@ -51,6 +51,17 @@
     overflow: visible !important;
 }
 
+#fnp__txt2img_container .fnp__current_info,
+#fnp__img2img_container .fnp__current_info,
+#fnp__txt2img_container .fnp__current_info > .prose,
+#fnp__img2img_container .fnp__current_info > .prose {
+    height: 22.75px !important;
+    min-height: 22.75px !important;
+    max-height: 22.75px !important;
+    overflow: hidden !important;
+    white-space: nowrap !important;
+}
+
 #fnp__txt2img_container .fnp__profile_label,
 #fnp__img2img_container .fnp__profile_label,
 #fnp__txt2img_container .fnp__user_count,
@@ -151,28 +162,28 @@
     white-space: nowrap !important;
 }
 
-#fnp__txt2img_container .fnp__rotated_match,
-#fnp__img2img_container .fnp__rotated_match {
+#fnp__txt2img_container .fnp__preset_button.stop,
+#fnp__img2img_container .fnp__preset_button.stop {
     position: relative !important;
     z-index: 2;
 }
 
-#fnp__txt2img_container .fnp__rotated_match button,
-#fnp__img2img_container .fnp__rotated_match button {
+#fnp__txt2img_container .fnp__preset_button.stop button,
+#fnp__img2img_container .fnp__preset_button.stop button {
     background: #3569d4 !important;
     border: 1px solid #83aaff !important;
     color: #ffffff !important;
 }
 
-#fnp__txt2img_container .fnp__rotated_match,
-#fnp__img2img_container .fnp__rotated_match {
+#fnp__txt2img_container .fnp__preset_button.stop,
+#fnp__img2img_container .fnp__preset_button.stop {
     background: #3569d4 !important;
     border: 1px solid #83aaff !important;
     color: #ffffff !important;
 }
 
-#fnp__txt2img_container .fnp__rotated_match::after,
-#fnp__img2img_container .fnp__rotated_match::after {
+#fnp__txt2img_container .fnp__preset_button.stop::after,
+#fnp__img2img_container .fnp__preset_button.stop::after {
     content: "Landscape equivalent";
     position: absolute;
     right: 0;
@@ -192,8 +203,8 @@
     transition: opacity 120ms ease, transform 120ms ease;
 }
 
-#fnp__txt2img_container .fnp__rotated_match:hover::after,
-#fnp__img2img_container .fnp__rotated_match:hover::after {
+#fnp__txt2img_container .fnp__preset_button.stop:hover::after,
+#fnp__img2img_container .fnp__preset_button.stop:hover::after {
     opacity: 1;
     transform: translateY(0);
 }
@@ -234,15 +245,6 @@
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
-}
-
-#fnp__txt2img_container .fnp__current_info > .prose,
-#fnp__img2img_container .fnp__current_info > .prose {
-    height: 22.75px !important;
-    min-height: 22.75px !important;
-    max-height: 22.75px !important;
-    overflow: hidden !important;
-    white-space: nowrap !important;
 }
 
 #fnp__txt2img_container .fnp__manage_button,
