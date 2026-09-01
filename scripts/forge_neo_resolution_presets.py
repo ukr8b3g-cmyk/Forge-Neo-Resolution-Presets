@@ -7,6 +7,7 @@ import os
 import random
 import shutil
 import tempfile
+import threading
 from datetime import datetime
 from fractions import Fraction
 from pathlib import Path
@@ -37,6 +38,8 @@ MIN_DIMENSION = 16
 MAX_DIMENSION = 16384
 DEFAULT_ROUNDING = 8
 MAX_HISTORY = 12
+MAX_IMPORT_BYTES = 5 * 1024 * 1024
+HISTORY_LOCK = threading.Lock()
 
 
 def register_click_compatible(component, *, js_code=None, **kwargs):
@@ -83,7 +86,11 @@ def _default_profiles() -> dict[str, Any]:
 
 
 def _is_dimension(value: Any) -> bool:
-    return isinstance(value, int) and MIN_DIMENSION <= value <= MAX_DIMENSION
+    return (
+        isinstance(value, int)
+        and MIN_DIMENSION <= value <= MAX_DIMENSION
+        and value % 8 == 0
+    )
 
 
 def _load_profiles() -> tuple[list[str], dict[str, list[tuple[int, int]]], str]:
@@ -143,27 +150,36 @@ def _record_resolution_history(tab_key: str, profile_name: str, width: Any, heig
     if not _is_dimension(width) or not _is_dimension(height):
         return
     try:
-        raw = json.loads(HISTORY_PATH.read_text(encoding="utf-8")) if HISTORY_PATH.exists() else []
-        history = raw if isinstance(raw, list) else []
-        history = [
-            item for item in history
-            if not (
-                isinstance(item, dict)
-                and item.get("tab") == tab_key
-                and item.get("profile") == profile_name
-                and item.get("width") == width
-                and item.get("height") == height
-            )
-        ]
-        history.insert(0, {
-            "tab": tab_key,
-            "profile": profile_name,
-            "width": width,
-            "height": height,
-            "timestamp": datetime.now().isoformat(timespec="seconds"),
-        })
-        DATA_PATH.mkdir(parents=True, exist_ok=True)
-        HISTORY_PATH.write_text(json.dumps(history[:MAX_HISTORY], ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+        with HISTORY_LOCK:
+            raw = json.loads(HISTORY_PATH.read_text(encoding="utf-8")) if HISTORY_PATH.exists() else []
+            history = raw if isinstance(raw, list) else []
+            history = [
+                item for item in history
+                if not (
+                    isinstance(item, dict)
+                    and item.get("tab") == tab_key
+                    and item.get("profile") == profile_name
+                    and item.get("width") == width
+                    and item.get("height") == height
+                )
+            ]
+            history.insert(0, {
+                "tab": tab_key,
+                "profile": profile_name,
+                "width": width,
+                "height": height,
+                "timestamp": datetime.now().isoformat(timespec="seconds"),
+            })
+            DATA_PATH.mkdir(parents=True, exist_ok=True)
+            fd, temp_name = tempfile.mkstemp(prefix="resolution-history-", suffix=".tmp", dir=str(DATA_PATH))
+            try:
+                with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as handle:
+                    json.dump(history[:MAX_HISTORY], handle, ensure_ascii=False, indent=2)
+                    handle.write("\n")
+                os.replace(temp_name, HISTORY_PATH)
+            finally:
+                if os.path.exists(temp_name):
+                    os.unlink(temp_name)
     except (OSError, ValueError, TypeError):
         pass
 
@@ -227,7 +243,7 @@ def _write_user_presets(presets: list[dict[str, Any]]) -> None:
     DATA_PATH.mkdir(parents=True, exist_ok=True)
     if USER_PRESETS_PATH.exists():
         BACKUP_PATH.mkdir(parents=True, exist_ok=True)
-        stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        stamp = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
         backup = BACKUP_PATH / f"user_presets-{stamp}.json"
         shutil.copy2(USER_PRESETS_PATH, backup)
         backups = sorted(BACKUP_PATH.glob("user_presets-*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
@@ -706,7 +722,7 @@ class ForgeNeoResolutionPresets(scripts.Script):
             presets = _load_user_presets()
             return [
                 _button_update(
-                    preset["name"] if index < len(presets) else "",
+                    presets[index]["name"] if index < len(presets) else "",
                     visible=index < len(presets),
                     variant=(
                         "primary"
@@ -1036,6 +1052,8 @@ class ForgeNeoResolutionPresets(scripts.Script):
                 source = Path(str(source_path))
                 if source.suffix.lower() != ".json":
                     raise ValueError("JSONファイルを選択してください")
+                if source.stat().st_size > MAX_IMPORT_BYTES:
+                    raise ValueError("JSONファイルは5 MiB以下にしてください")
                 imported = _normalise_user_presets(json.loads(source.read_text(encoding="utf-8")))
                 unique: list[dict[str, Any]] = []
                 names: set[str] = set()
