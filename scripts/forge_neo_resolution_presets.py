@@ -7,6 +7,7 @@ import os
 import random
 import shutil
 import tempfile
+import threading
 from datetime import datetime
 from fractions import Fraction
 from pathlib import Path
@@ -37,6 +38,9 @@ MIN_DIMENSION = 16
 MAX_DIMENSION = 16384
 DEFAULT_ROUNDING = 8
 MAX_HISTORY = 12
+MAX_IMPORT_BYTES = 5 * 1024 * 1024
+
+_HISTORY_LOCK = threading.Lock()
 
 
 def register_click_compatible(component, *, js_code=None, **kwargs):
@@ -86,6 +90,10 @@ def _is_dimension(value: Any) -> bool:
     return isinstance(value, int) and MIN_DIMENSION <= value <= MAX_DIMENSION
 
 
+def _is_preset_dimension(value: Any) -> bool:
+    return _is_dimension(value) and value % 8 == 0
+
+
 def _load_profiles() -> tuple[list[str], dict[str, list[tuple[int, int]]], str]:
     source_path = PROFILE_OVERRIDES_PATH if PROFILE_OVERRIDES_PATH.exists() else PROFILES_PATH
     try:
@@ -110,7 +118,7 @@ def _load_profiles() -> tuple[list[str], dict[str, list[tuple[int, int]]], str]:
                 continue
             width = preset.get("width")
             height = preset.get("height")
-            if _is_dimension(width) and _is_dimension(height):
+            if _is_preset_dimension(width) and _is_preset_dimension(height):
                 values.append((width, height))
         if values:
             profile_names.append(name)
@@ -143,27 +151,40 @@ def _record_resolution_history(tab_key: str, profile_name: str, width: Any, heig
     if not _is_dimension(width) or not _is_dimension(height):
         return
     try:
-        raw = json.loads(HISTORY_PATH.read_text(encoding="utf-8")) if HISTORY_PATH.exists() else []
-        history = raw if isinstance(raw, list) else []
-        history = [
-            item for item in history
-            if not (
-                isinstance(item, dict)
-                and item.get("tab") == tab_key
-                and item.get("profile") == profile_name
-                and item.get("width") == width
-                and item.get("height") == height
+        with _HISTORY_LOCK:
+            raw = json.loads(HISTORY_PATH.read_text(encoding="utf-8")) if HISTORY_PATH.exists() else []
+            history = raw if isinstance(raw, list) else []
+            history = [
+                item for item in history
+                if not (
+                    isinstance(item, dict)
+                    and item.get("tab") == tab_key
+                    and item.get("profile") == profile_name
+                    and item.get("width") == width
+                    and item.get("height") == height
+                )
+            ]
+            history.insert(0, {
+                "tab": tab_key,
+                "profile": profile_name,
+                "width": width,
+                "height": height,
+                "timestamp": datetime.now().isoformat(timespec="seconds"),
+            })
+            DATA_PATH.mkdir(parents=True, exist_ok=True)
+            fd, temp_name = tempfile.mkstemp(
+                prefix="resolution-history-",
+                suffix=".tmp",
+                dir=str(DATA_PATH),
             )
-        ]
-        history.insert(0, {
-            "tab": tab_key,
-            "profile": profile_name,
-            "width": width,
-            "height": height,
-            "timestamp": datetime.now().isoformat(timespec="seconds"),
-        })
-        DATA_PATH.mkdir(parents=True, exist_ok=True)
-        HISTORY_PATH.write_text(json.dumps(history[:MAX_HISTORY], ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            try:
+                with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as handle:
+                    json.dump(history[:MAX_HISTORY], handle, ensure_ascii=False, indent=2)
+                    handle.write("\n")
+                os.replace(temp_name, HISTORY_PATH)
+            finally:
+                if os.path.exists(temp_name):
+                    os.unlink(temp_name)
     except (OSError, ValueError, TypeError):
         pass
 
@@ -209,7 +230,7 @@ def _normalise_user_presets(raw: Any) -> list[dict[str, Any]]:
         height = item.get("height")
         if name.startswith("{'value':") or name.startswith('{"value"'):
             continue
-        if name and _is_dimension(width) and _is_dimension(height):
+        if name and _is_preset_dimension(width) and _is_preset_dimension(height):
             result.append({"name": name, "width": width, "height": height})
         if len(result) >= MAX_USER_PRESETS:
             break
@@ -227,7 +248,7 @@ def _write_user_presets(presets: list[dict[str, Any]]) -> None:
     DATA_PATH.mkdir(parents=True, exist_ok=True)
     if USER_PRESETS_PATH.exists():
         BACKUP_PATH.mkdir(parents=True, exist_ok=True)
-        stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        stamp = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
         backup = BACKUP_PATH / f"user_presets-{stamp}.json"
         shutil.copy2(USER_PRESETS_PATH, backup)
         backups = sorted(BACKUP_PATH.glob("user_presets-*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
@@ -913,8 +934,8 @@ class ForgeNeoResolutionPresets(scripts.Script):
                     raise ValueError("プリセット名を入力してください")
                 if cleaned.startswith("{'value':") or cleaned.startswith('{"value"'):
                     raise ValueError("無効なプリセット名です")
-                if not _is_dimension(int(width)) or not _is_dimension(int(height)):
-                    raise ValueError("現在のWidth／Heightが不正です")
+                if not _is_preset_dimension(int(width)) or not _is_preset_dimension(int(height)):
+                    raise ValueError("Width／Heightは8の倍数にしてください")
                 presets = _load_user_presets()
                 if any(preset["name"].casefold() == cleaned.casefold() for preset in presets):
                     return _refresh_user_controls(
@@ -976,8 +997,8 @@ class ForgeNeoResolutionPresets(scripts.Script):
                 cleaned = str(name or "").strip()[:MAX_NAME_LENGTH]
                 if not cleaned:
                     raise ValueError("プリセット名を入力してください")
-                if not _is_dimension(int(width)) or not _is_dimension(int(height)):
-                    raise ValueError("現在のWidth／Heightが不正です")
+                if not _is_preset_dimension(int(width)) or not _is_preset_dimension(int(height)):
+                    raise ValueError("Width／Heightは8の倍数にしてください")
                 presets = _load_user_presets()
                 match = next(
                     (index for index, preset in enumerate(presets)
@@ -1034,8 +1055,10 @@ class ForgeNeoResolutionPresets(scripts.Script):
                 if not source_path:
                     raise ValueError("JSONファイルを選択してください")
                 source = Path(str(source_path))
-                if source.suffix.lower() != ".json":
+                if source.suffix.lower() != ".json" or not source.is_file():
                     raise ValueError("JSONファイルを選択してください")
+                if source.stat().st_size > MAX_IMPORT_BYTES:
+                    raise ValueError("JSONファイルは5 MiB以下にしてください")
                 imported = _normalise_user_presets(json.loads(source.read_text(encoding="utf-8")))
                 unique: list[dict[str, Any]] = []
                 names: set[str] = set()
