@@ -113,7 +113,7 @@ def _write_json_atomic(path: Path, value: Any, prefix: str) -> None:
 def _backup_current_profile_config() -> str:
     PROFILE_BACKUP_PATH.mkdir(parents=True, exist_ok=True)
     source = PROFILE_OVERRIDES_PATH if PROFILE_OVERRIDES_PATH.exists() else PROFILES_PATH
-    stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    stamp = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
     destination = PROFILE_BACKUP_PATH / f"profiles-{stamp}.json"
     shutil.copy2(source, destination)
     backups = sorted(PROFILE_BACKUP_PATH.glob("profiles-*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
