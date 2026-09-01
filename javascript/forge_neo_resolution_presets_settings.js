@@ -1,4 +1,31 @@
 (() => {
+  const dirtyReaders = new Map();
+  const hasDirtyState = () => {
+    let dirty = false;
+    for (const [root, reader] of dirtyReaders) {
+      if (!root.isConnected) {
+        dirtyReaders.delete(root);
+        continue;
+      }
+      if (reader()) dirty = true;
+    }
+    return dirty;
+  };
+
+  document.addEventListener("click", event => {
+    const button = event.target.closest && event.target.closest("button");
+    if (!hasDirtyState() || !button || button.textContent.trim() !== "Reload UI") return;
+    if (!confirm("Reload UIすると未保存のProfile編集が失われます。続行しますか？")) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }
+  }, true);
+  window.addEventListener("beforeunload", event => {
+    if (!hasDirtyState()) return;
+    event.preventDefault();
+    event.returnValue = "";
+  });
+
   const initialize = root => {
     if (!root || root.dataset.fnpReady) return;
     root.dataset.fnpReady = "1";
@@ -24,6 +51,7 @@
     let dirty = false;
     let lastDeletedPreset = null;
     let validationErrors = {global: [], rows: {}};
+    dirtyReaders.set(root, () => dirty);
 
     const escape = value => String(value ?? "").replace(/[&<>"']/g, char => ({
       "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;"
@@ -228,20 +256,6 @@
         setStatus(error.message, "error");
       }
     };
-
-    document.addEventListener("click", event => {
-      const button = event.target.closest && event.target.closest("button");
-      if (!dirty || !button || button.textContent.trim() !== "Reload UI") return;
-      if (!confirm("Reload UIすると未保存のProfile編集が失われます。続行しますか？")) {
-        event.preventDefault();
-        event.stopImmediatePropagation();
-      }
-    }, true);
-    window.addEventListener("beforeunload", event => {
-      if (!dirty) return;
-      event.preventDefault();
-      event.returnValue = "";
-    });
 
     root.addEventListener("input", event => {
       const row = event.target.closest(".fnp-settings-preset-row");
