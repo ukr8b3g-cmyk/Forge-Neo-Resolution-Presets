@@ -16,6 +16,7 @@ from typing import Any
 import gradio as gr
 
 import modules.scripts as scripts
+from modules import shared
 
 
 BASE_PATH = Path(scripts.basedir())
@@ -37,6 +38,7 @@ MAX_NAME_LENGTH = 32
 MIN_DIMENSION = 16
 MAX_DIMENSION = 16384
 DEFAULT_ROUNDING = 8
+SUPPORTED_RESOLUTION_STEPS = (8, 16, 32, 64, 128, 256)
 MAX_HISTORY = 12
 MAX_IMPORT_BYTES = 5 * 1024 * 1024
 HISTORY_LOCK = threading.Lock()
@@ -95,6 +97,76 @@ def _is_dimension(value: Any) -> bool:
         and MIN_DIMENSION <= value <= MAX_DIMENSION
         and value % 8 == 0
     )
+
+
+def _resolution_step() -> int:
+    try:
+        step = int(getattr(shared.opts, "res_step", DEFAULT_ROUNDING))
+    except (TypeError, ValueError):
+        step = DEFAULT_ROUNDING
+    return step if step > 0 else DEFAULT_ROUNDING
+
+
+def _component_number(component: Any, name: str, fallback: int) -> int:
+    try:
+        return int(getattr(component, name))
+    except (AttributeError, TypeError, ValueError):
+        return fallback
+
+
+def _native_constraints(width_component: Any = None, height_component: Any = None) -> tuple[int, int, int]:
+    components = [component for component in (width_component, height_component) if component is not None]
+    minimum = max(
+        [MIN_DIMENSION]
+        + [_component_number(component, "minimum", MIN_DIMENSION) for component in components]
+    )
+    maximum = min(
+        [MAX_DIMENSION]
+        + [_component_number(component, "maximum", MAX_DIMENSION) for component in components]
+    )
+    step = _resolution_step()
+    for component in components:
+        component_step = _component_number(component, "step", 0)
+        if component_step > 0:
+            step = component_step
+            break
+    if maximum < minimum:
+        minimum, maximum = MIN_DIMENSION, MAX_DIMENSION
+    return minimum, maximum, max(1, step)
+
+
+def _is_step_compatible(
+    width: Any,
+    height: Any,
+    minimum: int = MIN_DIMENSION,
+    maximum: int = MAX_DIMENSION,
+    step: int | None = None,
+) -> bool:
+    try:
+        width_value = int(width)
+        height_value = int(height)
+        step_value = int(step if step is not None else _resolution_step())
+    except (TypeError, ValueError):
+        return False
+    return (
+        step_value > 0
+        and minimum <= width_value <= maximum
+        and minimum <= height_value <= maximum
+        and width_value % step_value == 0
+        and height_value % step_value == 0
+    )
+
+
+def _rounding_choices(native_step: int) -> list[int]:
+    step = max(1, int(native_step))
+    choices = [
+        value
+        for value in SUPPORTED_RESOLUTION_STEPS
+        if value >= step and value % step == 0
+    ]
+    if step not in choices:
+        choices.insert(0, step)
+    return sorted(set(choices))
 
 
 def _load_profiles() -> tuple[list[str], dict[str, list[tuple[int, int]]], str]:
@@ -281,30 +353,50 @@ def _parse_ratio(value: Any) -> Fraction:
     return ratio
 
 
-def _round_dimension(value: float, rounding: int) -> int:
-    return max(MIN_DIMENSION, int(round(value / rounding) * rounding))
+def _round_dimension(
+    value: float,
+    rounding: int,
+    minimum: int = MIN_DIMENSION,
+    maximum: int = MAX_DIMENSION,
+) -> int:
+    rounded = int(round(value / rounding) * rounding)
+    return min(maximum, max(minimum, rounded))
 
 
-def _calculate_dimensions(width: Any, height: Any, ratio: Any, rounding: Any) -> tuple[int, int]:
+def _calculate_dimensions(
+    width: Any,
+    height: Any,
+    ratio: Any,
+    rounding: Any,
+    minimum: int = MIN_DIMENSION,
+    maximum: int = MAX_DIMENSION,
+) -> tuple[int, int]:
     if not _is_dimension(int(width)) or not _is_dimension(int(height)):
         raise ValueError("Width／Heightが不正です")
     ratio_value = _parse_ratio(ratio)
     rounding_value = int(rounding)
-    if rounding_value not in (1, 2, 4, 8, 16, 32, 64, 128):
+    if rounding_value <= 0 or rounding_value > MAX_DIMENSION:
         raise ValueError("丸め幅が不正です")
 
     area = int(width) * int(height)
     target_width = math.sqrt(area * float(ratio_value))
     target_height = math.sqrt(area / float(ratio_value))
     return (
-        _round_dimension(target_width, rounding_value),
-        _round_dimension(target_height, rounding_value),
+        _round_dimension(target_width, rounding_value, minimum, maximum),
+        _round_dimension(target_height, rounding_value, minimum, maximum),
     )
 
 
-def _ratio_result(width: Any, height: Any, ratio: Any, rounding: Any) -> str:
+def _ratio_result(
+    width: Any,
+    height: Any,
+    ratio: Any,
+    rounding: Any,
+    minimum: int = MIN_DIMENSION,
+    maximum: int = MAX_DIMENSION,
+) -> str:
     try:
-        result = _calculate_dimensions(width, height, ratio, rounding)
+        result = _calculate_dimensions(width, height, ratio, rounding, minimum, maximum)
     except (ValueError, TypeError, ZeroDivisionError):
         return "—"
     return f"{result[0]}×{result[1]}"
@@ -330,7 +422,7 @@ def _preset_button_variant(
     return "secondary"
 
 
-def _current_info(width: Any, height: Any) -> str:
+def _current_info(width: Any, height: Any, native_step: int | None = None) -> str:
     try:
         width_value = int(width)
         height_value = int(height)
@@ -338,9 +430,10 @@ def _current_info(width: Any, height: Any) -> str:
         return "Current —"
     if not _is_dimension(width_value) or not _is_dimension(height_value):
         return "Current —"
-    grid = "8" if width_value % 8 == 0 and height_value % 8 == 0 else "—"
+    step = max(1, int(native_step if native_step is not None else _resolution_step()))
+    compatibility = "OK" if width_value % step == 0 and height_value % step == 0 else "off-step"
     megapixels = width_value * height_value / 1_000_000
-    return f"Current `{width_value}×{height_value}` · {megapixels:.2f} MP · Grid {grid}"
+    return f"Current `{width_value}×{height_value}` · {megapixels:.2f} MP · Step {step} {compatibility}"
 
 
 def _resolution_pair(width: Any, height: Any) -> tuple[int, int] | None:
@@ -355,8 +448,16 @@ def _button_update(
     label: str,
     visible: bool = True,
     variant: str = "secondary",
+    interactive: bool | None = None,
 ) -> dict[str, Any]:
-    return gr.update(value=label, visible=visible, variant=variant)
+    kwargs: dict[str, Any] = {
+        "value": label,
+        "visible": visible,
+        "variant": variant,
+    }
+    if interactive is not None:
+        kwargs["interactive"] = interactive
+    return gr.update(**kwargs)
 
 
 def _refresh_user_controls(
@@ -446,8 +547,14 @@ class ForgeNeoResolutionPresets(scripts.Script):
                 (item["width"], item["height"])
                 for item in _load_user_presets()
             ]
-        if values:
-            p.width, p.height = random.choice(values)
+        step = _resolution_step()
+        compatible_values = [
+            (width, height)
+            for width, height in values
+            if _is_step_compatible(width, height, step=step)
+        ]
+        if compatible_values:
+            p.width, p.height = random.choice(compatible_values)
 
     def ui(self, is_img2img):
         profile_names, profiles, default_profile = _load_profiles()
@@ -471,6 +578,19 @@ class ForgeNeoResolutionPresets(scripts.Script):
         preset_row_id = f"fnp__{tab_key}_preset_row"
         initial_width = getattr(width_component, "value", None)
         initial_height = getattr(height_component, "value", None)
+        native_minimum, native_maximum, native_step = _native_constraints(
+            width_component, height_component
+        )
+
+        def native_compatible(width, height):
+            return _is_step_compatible(
+                width,
+                height,
+                minimum=native_minimum,
+                maximum=native_maximum,
+                step=native_step,
+            )
+
         selected_profile = _load_last_profile(tab_key, profile_names, default_profile)
         randomize_default = _load_behavior_settings()["randomize_default"]
         randomize_state = gr.State(randomize_default)
@@ -491,6 +611,7 @@ class ForgeNeoResolutionPresets(scripts.Script):
                                 current_width,
                                 current_height,
                             ),
+                            interactive=native_compatible(width, height),
                         )
                     )
                 else:
@@ -534,6 +655,7 @@ class ForgeNeoResolutionPresets(scripts.Script):
                             if initial
                             else "secondary"
                         ),
+                        interactive=native_compatible(initial[0], initial[1]) if initial else False,
                         elem_classes=["fnp__preset_button"],
                     )
                     preset_buttons.append(button)
@@ -588,6 +710,7 @@ class ForgeNeoResolutionPresets(scripts.Script):
                                 if initial
                                 else "secondary"
                             ),
+                            interactive=native_compatible(initial[0], initial[1]) if initial else False,
                             elem_classes=["fnp__preset_button", "fnp__extended_button"],
                         )
                     )
@@ -612,6 +735,11 @@ class ForgeNeoResolutionPresets(scripts.Script):
                                 )
                                 else "secondary"
                             ),
+                            interactive=(
+                                native_compatible(initial_user["width"], initial_user["height"])
+                                if initial_user
+                                else False
+                            ),
                             elem_classes=["fnp__user_button"],
                         )
                     )
@@ -621,7 +749,7 @@ class ForgeNeoResolutionPresets(scripts.Script):
                     elem_classes=["fnp__more_button"],
                 )
                 current_info = gr.Markdown(
-                    _current_info(initial_width, initial_height),
+                    _current_info(initial_width, initial_height, native_step),
                     elem_classes=["fnp__current_info"],
                 )
                 manage_button = gr.Button("Manage", elem_classes=["fnp__manage_button"])
@@ -701,8 +829,8 @@ class ForgeNeoResolutionPresets(scripts.Script):
                     gr.Markdown("Area: current", elem_classes=["fnp__ratio_basis"])
                     gr.Markdown("Round", elem_classes=["fnp__rounding_label"])
                     rounding = gr.Dropdown(
-                        choices=[8, 16, 32, 64],
-                        value=DEFAULT_ROUNDING,
+                        choices=_rounding_choices(native_step),
+                        value=native_step,
                         show_label=False,
                         container=False,
                         filterable=False,
@@ -738,6 +866,11 @@ class ForgeNeoResolutionPresets(scripts.Script):
                             current_height,
                         )
                         else "secondary"
+                    ),
+                    interactive=(
+                        native_compatible(presets[index]["width"], presets[index]["height"])
+                        if index < len(presets)
+                        else False
                     ),
                 )
                 for index in range(MAX_USER_PRESETS)
@@ -776,12 +909,14 @@ class ForgeNeoResolutionPresets(scripts.Script):
         )
 
         def dimension_changed(selected, current_width, current_height):
-            _record_resolution_history(tab_key, selected, current_width, current_height)
             return (
                 builtin_button_updates(selected, current_width, current_height)
                 + user_button_updates(current_width, current_height)
-                + [_current_info(current_width, current_height)]
+                + [_current_info(current_width, current_height, native_step)]
             )
+
+        def record_dimension_release(selected, current_width, current_height):
+            _record_resolution_history(tab_key, selected, current_width, current_height)
 
         for dimension_component in [width_component, height_component]:
             dimension_change = getattr(dimension_component, "change", None)
@@ -790,6 +925,14 @@ class ForgeNeoResolutionPresets(scripts.Script):
                     dimension_changed,
                     inputs=[profile, width_component, height_component],
                     outputs=preset_buttons + extended_buttons + user_buttons + [current_info],
+                    show_progress="hidden",
+                )
+            dimension_release = getattr(dimension_component, "release", None)
+            if dimension_release is not None:
+                dimension_release(
+                    record_dimension_release,
+                    inputs=[profile, width_component, height_component],
+                    outputs=None,
                     show_progress="hidden",
                 )
 
@@ -810,7 +953,7 @@ class ForgeNeoResolutionPresets(scripts.Script):
                 gr.update(interactive=previous is not None),
             ] + builtin_button_updates(selected, target_w, target_h) + user_button_updates(
                 target_w, target_h
-            ) + [_current_info(target_w, target_h)]
+            ) + [_current_info(target_w, target_h, native_step)]
 
         for index, button in enumerate(preset_buttons + extended_buttons):
             preset_index = index
@@ -876,7 +1019,11 @@ class ForgeNeoResolutionPresets(scripts.Script):
             previous = _resolution_pair(current_width, current_height)
             if not values:
                 return current_width, current_height, None, gr.update(interactive=False)
-            return values[0][0], values[0][1], previous, gr.update(interactive=previous is not None)
+            target_width, target_height = values[0]
+            if not native_compatible(target_width, target_height):
+                return current_width, current_height, previous, gr.update(interactive=previous is not None)
+            _record_resolution_history(tab_key, selected, target_width, target_height)
+            return target_width, target_height, previous, gr.update(interactive=previous is not None)
 
         reset_button.click(
             reset_profile,
@@ -885,14 +1032,16 @@ class ForgeNeoResolutionPresets(scripts.Script):
             show_progress="hidden",
         )
 
-        def undo_resolution(current_width, current_height, previous):
+        def undo_resolution(selected, current_width, current_height, previous):
             if not isinstance(previous, (list, tuple)) or len(previous) != 2:
                 return current_width, current_height, None, gr.update(interactive=False)
+            if native_compatible(previous[0], previous[1]):
+                _record_resolution_history(tab_key, selected, previous[0], previous[1])
             return previous[0], previous[1], None, gr.update(interactive=False)
 
         undo_button.click(
             undo_resolution,
-            inputs=[width_component, height_component, previous_resolution],
+            inputs=[profile, width_component, height_component, previous_resolution],
             outputs=[width_component, height_component, previous_resolution, undo_button],
             show_progress="hidden",
         )
@@ -1175,11 +1324,27 @@ class ForgeNeoResolutionPresets(scripts.Script):
             )
 
         ratio_inputs = [width_component, height_component, aspect_ratio, rounding]
+
+        def ratio_result_for_ui(width, height, ratio, precision):
+            return _ratio_result(
+                width,
+                height,
+                ratio,
+                precision,
+                native_minimum,
+                native_maximum,
+            )
+
         for quick_ratio, quick_button in zip(("1:1", "4:5", "3:4", "2:3", "9:16"), quick_ratio_buttons):
             quick_button.click(
                 lambda current_width, current_height, current_rounding, ratio=quick_ratio: (
                     ratio,
-                    _ratio_result(current_width, current_height, ratio, current_rounding),
+                    ratio_result_for_ui(
+                        current_width,
+                        current_height,
+                        ratio,
+                        current_rounding,
+                    ),
                 ),
                 inputs=[width_component, height_component, rounding],
                 outputs=[aspect_ratio, result],
@@ -1190,21 +1355,31 @@ class ForgeNeoResolutionPresets(scripts.Script):
             event = getattr(component, "input", None) if component is aspect_ratio else getattr(component, "change", None)
             if event is not None:
                 event(
-                    _ratio_result,
+                    ratio_result_for_ui,
                     inputs=ratio_inputs,
                     outputs=[result],
                     show_progress="hidden",
                 )
 
-        def apply_ratio_values(width, height, ratio, precision):
+        def apply_ratio_values(selected, width, height, ratio, precision):
             try:
-                return _calculate_dimensions(width, height, ratio, precision)
+                target_width, target_height = _calculate_dimensions(
+                    width,
+                    height,
+                    ratio,
+                    precision,
+                    native_minimum,
+                    native_maximum,
+                )
             except (ValueError, TypeError, ZeroDivisionError):
                 return width, height
+            if native_compatible(target_width, target_height):
+                _record_resolution_history(tab_key, selected, target_width, target_height)
+            return target_width, target_height
 
         apply_ratio.click(
             apply_ratio_values,
-            inputs=ratio_inputs,
+            inputs=[profile] + ratio_inputs,
             outputs=[width_component, height_component],
             show_progress="hidden",
         )

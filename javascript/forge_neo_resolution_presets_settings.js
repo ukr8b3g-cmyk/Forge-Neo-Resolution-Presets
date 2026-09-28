@@ -38,6 +38,7 @@
       return body;
     });
     const status = root.querySelector("#fnp-settings-status");
+    const resolutionStepInfo = root.querySelector("#fnp-settings-resolution-step");
     const profileSelect = root.querySelector("#fnp-settings-profile");
     const presetList = root.querySelector("#fnp-settings-presets");
     const backupSelect = root.querySelector("#fnp-settings-backup");
@@ -151,6 +152,18 @@
         return;
       }
       const presets = Array.isArray(profile.presets) ? profile.presets : [];
+      const activeStep = Math.max(1, Number(state.resolution_step) || 8);
+      const offStepCount = presets.filter(preset => {
+        const width = Number(preset.width);
+        const height = Number(preset.height);
+        return Number.isInteger(width) && Number.isInteger(height)
+          && (width % activeStep !== 0 || height % activeStep !== 0);
+      }).length;
+      if (resolutionStepInfo) {
+        resolutionStepInfo.textContent = offStepCount
+          ? `Active Forge Neo Resolution Step: ${activeStep} · ${offStepCount} preset(s) are off-step and are disabled in txt2img/img2img.`
+          : `Active Forge Neo Resolution Step: ${activeStep} · All presets are compatible.`;
+      }
       presetList.innerHTML = presets.map((preset, index) => {
         const errors = validationErrors.rows[profileKey(profileIndex, index)] || [];
         const invalid = errors.length ? " invalid" : "";

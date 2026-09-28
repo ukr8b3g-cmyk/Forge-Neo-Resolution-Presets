@@ -42,6 +42,14 @@ Forge Neo／reForgeのtxt2img・img2img向け、コンパクトな解像度プ�
 
 `Settings` → `Extensions` → `Resolution Presets`を開くと、Profileの編集と拡張機能データの管理ができます。この設定ページはForge Neo標準のWidth／Height入力を置き換えません。保存したProfileを`Reload UI`で再読み込みすると、txt2img／img2imgへ反映されます。
 
+### Resolution Step互換性
+
+この拡張はForge Neo標準のWidth／Heightスライダー範囲と`Resolution Step`を読み取ります。現在のStepに合わないPresetは、別の解像度へ勝手に丸めず、メイン画面で無効化します。SettingsのProfile Editorには、選択中ProfileでStep非互換のPreset数を表示します。
+
+現在のForge Neoの初期値は`Resolution Step = 64`です。標準Profileの一部の縦長Presetは`32`または`16`が必要です。標準Presetをすべて使う場合はForge Neo側のResolution Stepを`16`（または`8`）へ変更し、再起動してください。RandomizeではStep非互換のPresetを自動的に抽選対象から外します。
+
+Advanced Ratio Calculatorは現在のResolution Stepと互換する丸め幅だけを表示し、結果をForge Neo標準のWidth／Heightスライダー範囲内に収めます。
+
 ### Profile Editor
 
 `profiles.json`は標準Profileの読み取り専用データです。エディターの変更は`Save changes`を押すまでブラウザ上のDraftとして保持されます。
@@ -65,7 +73,7 @@ Forge Neo／reForgeのtxt2img・img2img向け、コンパクトな解像度プ�
 
 ### Resolution History
 
-履歴パネルには、最近の解像度変更を解像度、Profile、タブ、日時とともに表示します。`Clear history`でローカルの履歴ファイル（`data/resolution_history.json`）を削除できます。
+履歴パネルには、最近の解像度変更を解像度、Profile、タブ、日時とともに表示します。Width／Heightを直接操作した場合はスライダーを離した時点、Preset／Reset／Undo／Ratio Applyは最終解像度を1回だけ記録します。`Clear history`でローカルの履歴ファイル（`data/resolution_history.json`）を削除できます。
 
 ユーザープリセットは実行時に`data/user_presets.json`へ保存されます。保存・削除の前に、既存ファイルは`data/backups/`へバックアップされます。
 

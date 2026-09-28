@@ -41,6 +41,14 @@ Restart Forge Neo or reForge after installation.
 
 Open `Settings` → `Extensions` → `Resolution Presets` to edit Profiles and manage extension data. The Settings page does not replace Forge Neo's native Width/Height controls; changes are applied to txt2img/img2img after the saved Profile is reloaded.
 
+### Resolution Step compatibility
+
+The extension reads the active Forge Neo Width/Height slider range and `Resolution Step`. Presets that do not align with the active step are disabled instead of being silently rounded to a different resolution. The Settings editor reports how many presets in the selected Profile are off-step.
+
+Current Forge Neo defaults to `Resolution Step = 64`. Some shipped portrait presets require `32` or `16`; set Forge Neo's Resolution Step to `16` (or `8`) and restart when you need every shipped preset. Randomize automatically excludes off-step presets.
+
+The Advanced Ratio Calculator uses only rounding values compatible with the active Resolution Step and clamps results to the native Width/Height slider range.
+
 ### Profile Editor
 
 `profiles.json` contains the read-only built-in Profiles. The editor keeps changes as a browser-side Draft until `Save changes` is clicked.
@@ -64,7 +72,7 @@ Open `Settings` → `Extensions` → `Resolution Presets` to edit Profiles and m
 
 ### Resolution History
 
-The history panel records recent resolution changes with the resolution, Profile, tab, and timestamp. `Clear history` removes the local history file (`data/resolution_history.json`).
+The history panel records recent resolution changes with the resolution, Profile, tab, and timestamp. Direct Width/Height edits are recorded when the slider is released; preset, Reset, Undo, and Ratio Apply actions record their final resolution once. `Clear history` removes the local history file (`data/resolution_history.json`).
 
 User presets are stored at runtime in `data/user_presets.json`. Existing files are backed up in `data/backups/` before each save or delete operation.
 

@@ -41,6 +41,14 @@ def _is_dimension(value: Any) -> bool:
     return isinstance(value, int) and MIN_DIMENSION <= value <= MAX_DIMENSION
 
 
+def _resolution_step() -> int:
+    try:
+        step = int(getattr(shared.opts, "res_step", 8))
+    except (TypeError, ValueError):
+        step = 8
+    return step if step > 0 else 8
+
+
 def _normalise_document(raw: Any) -> dict[str, Any]:
     if not isinstance(raw, dict):
         raise ValueError("Profile JSONが不正です")
@@ -169,6 +177,7 @@ def _state() -> dict[str, Any]:
         "behavior": _load_behavior(),
         "history": _load_history(),
         "backups": _list_backups(),
+        "resolution_step": _resolution_step(),
     }
 
 
@@ -242,230 +251,6 @@ def _register_routes(_demo, app):
             return _response({"ok": False, "message": f"履歴を削除できません: {error}"}, 400)
 
 
-SETTINGS_HTML = r"""
-<div class="fnp-settings-app">
-  <div class="fnp-settings-status" id="fnp-settings-status">読み込み中...</div>
-
-  <details open>
-    <summary>Profile Editor</summary>
-    <div class="fnp-settings-toolbar">
-      <label>Profile <select id="fnp-settings-profile"></select></label>
-      <button data-action="add-profile">Add profile</button>
-      <button data-action="duplicate-profile">Duplicate</button>
-      <button data-action="delete-profile">Delete</button>
-      <button data-action="set-default">Set as default</button>
-    </div>
-    <div class="fnp-settings-hint">上から9件がMain row、10件目以降がMore Portraitに表示されます。ドラッグで順番を変更できます。</div>
-    <div id="fnp-settings-presets"></div>
-    <div class="fnp-settings-actions">
-      <button data-action="add-preset">Add preset</button>
-      <button data-action="save-profiles" class="primary">Save changes</button>
-      <button data-action="restore-defaults">Restore defaults</button>
-    </div>
-  </details>
-
-  <details open>
-    <summary>Backup / Restore</summary>
-    <div class="fnp-settings-toolbar">
-      <button data-action="backup">Create backup</button>
-      <select id="fnp-settings-backup"></select>
-      <button data-action="restore-backup">Restore selected</button>
-    </div>
-    <div class="fnp-settings-hint">Profile変更前の状態はdata/profile_backups/へ保存されます。</div>
-  </details>
-
-  <details open>
-    <summary>Randomize Settings</summary>
-    <label class="fnp-settings-check"><input type="checkbox" id="fnp-settings-random-default"> 起動時にRandomizeをON</label>
-    <label class="fnp-settings-check"><input type="checkbox" id="fnp-settings-random-custom"> Custom Presetも抽選対象にする</label>
-    <div class="fnp-settings-actions"><button data-action="save-behavior" class="primary">Save Randomize settings</button></div>
-  </details>
-
-  <details open>
-    <summary>Resolution History</summary>
-    <div id="fnp-settings-history"></div>
-    <div class="fnp-settings-actions"><button data-action="clear-history">Clear history</button></div>
-  </details>
-
-  <div class="fnp-settings-hint">Profile変更とRandomize初期状態は、Settings上部のReload UI後に反映されます。</div>
-</div>
-<script>
-(() => {
-  const root = document.currentScript?.parentElement;
-  if (!root || root.dataset.fnpReady) return;
-  root.dataset.fnpReady = "1";
-  const api = (path, options = {}) => fetch(`/fnp-resolution-presets/settings/${path}`, {
-    headers: {"Content-Type": "application/json"}, ...options
-  }).then(async response => {
-    const body = await response.json();
-    if (!response.ok || !body.ok) throw new Error(body.message || "Request failed");
-    return body;
-  });
-  const status = root.querySelector("#fnp-settings-status");
-  const profileSelect = root.querySelector("#fnp-settings-profile");
-  const presetList = root.querySelector("#fnp-settings-presets");
-  const backupSelect = root.querySelector("#fnp-settings-backup");
-  const historyList = root.querySelector("#fnp-settings-history");
-  let state = null;
-  let profileIndex = 0;
-  let dragIndex = null;
-
-  const setStatus = (message, error = false) => {
-    status.textContent = message;
-    status.classList.toggle("error", error);
-  };
-  const escape = value => String(value).replace(/[&<>"']/g, char => ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[char]));
-  const selectedProfile = () => state.profiles.profiles[profileIndex];
-
-  function renderProfiles() {
-    profileSelect.innerHTML = state.profiles.profiles.map((profile, index) => `<option value="${index}">${escape(profile.name)}${profile.name === state.profiles.default_profile ? " (default)" : ""}</option>`).join("");
-    profileSelect.value = String(profileIndex);
-    const profile = selectedProfile();
-    presetList.innerHTML = profile.presets.map((preset, index) => `
-      <div class="fnp-settings-preset-row" draggable="true" data-index="${index}">
-        <span class="fnp-settings-drag" title="Drag to reorder">↕</span>
-        <span class="fnp-settings-slot">${index < 9 ? "Main" : "More"} ${index + 1}</span>
-        <input type="number" min="16" max="16384" step="8" data-field="width" value="${preset.width}">
-        <span>×</span>
-        <input type="number" min="16" max="16384" step="8" data-field="height" value="${preset.height}">
-        <button data-action="duplicate-preset" data-index="${index}">Duplicate</button>
-        <button data-action="delete-preset" data-index="${index}">Delete</button>
-      </div>`).join("");
-  }
-
-  function renderBackups() {
-    backupSelect.innerHTML = (state.backups || []).map(name => `<option value="${escape(name)}">${escape(name)}</option>`).join("");
-  }
-
-  function renderHistory() {
-    historyList.innerHTML = state.history.length ? state.history.map(item => `
-      <div class="fnp-settings-history-row"><strong>${item.width}×${item.height}</strong><span>${escape(item.profile || "")} · ${escape(item.tab || "")}</span><small>${escape(item.timestamp || "")}</small></div>`).join("") : "<div class=\"fnp-settings-empty\">履歴はありません</div>";
-  }
-
-  function render() {
-    renderProfiles();
-    renderBackups();
-    renderHistory();
-    root.querySelector("#fnp-settings-random-default").checked = state.behavior.randomize_default;
-    root.querySelector("#fnp-settings-random-custom").checked = state.behavior.randomize_user_presets;
-  }
-
-  async function load() {
-    try {
-      const response = await api("state");
-      state = response.state;
-      profileIndex = Math.max(0, state.profiles.profiles.findIndex(profile => profile.name === state.profiles.default_profile));
-      render();
-      setStatus("準備完了");
-    } catch (error) { setStatus(error.message, true); }
-  }
-
-  root.addEventListener("input", event => {
-    const row = event.target.closest(".fnp-settings-preset-row");
-    if (!row || !event.target.dataset.field) return;
-    const value = Number(event.target.value);
-    selectedProfile().presets[Number(row.dataset.index)][event.target.dataset.field] = value;
-  });
-  profileSelect.addEventListener("change", () => { profileIndex = Number(profileSelect.value); renderProfiles(); });
-  presetList.addEventListener("dragstart", event => {
-    const row = event.target.closest(".fnp-settings-preset-row");
-    dragIndex = row ? Number(row.dataset.index) : null;
-  });
-  presetList.addEventListener("dragover", event => event.preventDefault());
-  presetList.addEventListener("drop", event => {
-    event.preventDefault();
-    const row = event.target.closest(".fnp-settings-preset-row");
-    if (!row || dragIndex === null) return;
-    const targetIndex = Number(row.dataset.index);
-    const presets = selectedProfile().presets;
-    const [moved] = presets.splice(dragIndex, 1);
-    presets.splice(targetIndex, 0, moved);
-    dragIndex = null;
-    renderProfiles();
-  });
-
-  root.addEventListener("click", async event => {
-    const button = event.target.closest("button[data-action]");
-    if (!button) return;
-    const action = button.dataset.action;
-    try {
-      if (action === "add-profile") {
-        const name = prompt("Profile name", "New Profile");
-        if (!name) return;
-        state.profiles.profiles.push({name: name.trim(), presets: [{width: 1024, height: 1024}]});
-        profileIndex = state.profiles.profiles.length - 1;
-        renderProfiles();
-      } else if (action === "duplicate-profile") {
-        const source = selectedProfile();
-        state.profiles.profiles.splice(profileIndex + 1, 0, {name: `${source.name} Copy`, presets: source.presets.map(preset => ({...preset}))});
-        profileIndex += 1;
-        renderProfiles();
-      } else if (action === "delete-profile") {
-        if (state.profiles.profiles.length <= 1 || !confirm("このProfileを削除しますか？")) return;
-        state.profiles.profiles.splice(profileIndex, 1);
-        profileIndex = Math.min(profileIndex, state.profiles.profiles.length - 1);
-        renderProfiles();
-      } else if (action === "set-default") {
-        state.profiles.default_profile = selectedProfile().name;
-        renderProfiles();
-        setStatus(`Defaultを${state.profiles.default_profile}に設定しました。Save changesで保存してください。`);
-      } else if (action === "add-preset") {
-        if (selectedProfile().presets.length >= 14) throw new Error("1 Profileあたり14件までです");
-        selectedProfile().presets.push({width: 1024, height: 1024});
-        renderProfiles();
-      } else if (action === "duplicate-preset") {
-        if (selectedProfile().presets.length >= 14) throw new Error("1 Profileあたり14件までです");
-        const index = Number(button.dataset.index);
-        selectedProfile().presets.splice(index + 1, 0, {...selectedProfile().presets[index]});
-        renderProfiles();
-      } else if (action === "delete-preset") {
-        if (selectedProfile().presets.length <= 1) throw new Error("Profileには1件以上必要です");
-        selectedProfile().presets.splice(Number(button.dataset.index), 1);
-        renderProfiles();
-      } else if (action === "save-profiles") {
-        const response = await api("profiles", {method: "POST", body: JSON.stringify(state.profiles)});
-        state = response.state;
-        render();
-        setStatus(response.message);
-      } else if (action === "restore-defaults") {
-        if (!confirm("標準Profileへ戻しますか？")) return;
-        const response = await api("restore-defaults", {method: "POST"});
-        state = response.state;
-        profileIndex = 0;
-        render();
-        setStatus(response.message);
-      } else if (action === "backup") {
-        const response = await api("backup", {method: "POST"});
-        state = response.state;
-        renderBackups();
-        setStatus(response.message);
-      } else if (action === "restore-backup") {
-        if (!backupSelect.value || !confirm("選択したBackupを復元しますか？")) return;
-        const response = await api("restore-backup", {method: "POST", body: JSON.stringify({name: backupSelect.value})});
-        state = response.state;
-        render();
-        setStatus(response.message);
-      } else if (action === "save-behavior") {
-        const response = await api("behavior", {method: "POST", body: JSON.stringify({
-          randomize_default: root.querySelector("#fnp-settings-random-default").checked,
-          randomize_user_presets: root.querySelector("#fnp-settings-random-custom").checked
-        })});
-        state.behavior = response.behavior;
-        setStatus(response.message);
-      } else if (action === "clear-history") {
-        if (!confirm("履歴を削除しますか？")) return;
-        const response = await api("history/clear", {method: "POST"});
-        state = response.state;
-        renderHistory();
-        setStatus(response.message);
-      }
-    } catch (error) { setStatus(error.message, true); }
-  });
-  load();
-})();
-</script>
-"""
-
 SETTINGS_MARKUP = r"""
 <div class="fnp-settings-app">
   <div class="fnp-settings-status" id="fnp-settings-status" aria-live="polite">読み込み中...</div>
@@ -473,6 +258,7 @@ SETTINGS_MARKUP = r"""
   <details open class="fnp-settings-section fnp-settings-profile-section">
     <summary>Profile Editor</summary>
     <div class="fnp-settings-definition">Profile = a set of resolution presets.</div>
+    <div class="fnp-settings-helper" id="fnp-settings-resolution-step">Active Resolution Step: —</div>
     <div class="fnp-settings-toolbar fnp-settings-profile-toolbar">
       <label>Profile <select id="fnp-settings-profile" aria-label="Profile"></select></label>
       <button type="button" data-action="add-profile">New profile</button>

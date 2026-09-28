@@ -1,0 +1,25 @@
+name: Regression checks
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Python syntax
+        run: python -m py_compile scripts/forge_neo_resolution_presets.py scripts/forge_neo_resolution_presets_settings.py
+      - name: Unit tests
+        run: python -m unittest discover -s tests -v
+      - name: JavaScript syntax
+        run: node --check javascript/forge_neo_resolution_presets_settings.js
+      - name: Profile JSON
+        run: python -m json.tool profiles.json > /dev/null
