@@ -18,12 +18,37 @@ UI rendering, preset selection, portrait/landscape color switching, and `Copy` h
 
 - Model-family profiles with one-click Width/Height presets.
 - The `SDXL` profile covers SDXL/Illustrious-style workflows and includes additional portrait presets.
+- The `Krea2` profile includes three square sizes and portrait presets, with two extra sizes under `More Portrait`.
 - Shared user presets saved from the current Width/Height values.
 - Optional per-generation randomization from the current Profile's built-in presets.
 - Compact `More Portrait`, `Reset`, `Undo`, and `Copy` actions.
 - Optional aspect-ratio calculator that preserves the current total pixel area.
 - Works independently in txt2img and img2img without recreating Forge Neo's native Width/Height controls.
 - No image processing, upscaling, checkpoint inspection, or generation-side processing.
+
+## Krea2 profile
+
+The `Krea2` profile contains 11 presets in the following order. Landscape sizes are available by swapping the native Width/Height controls.
+
+| Display | Width × Height | Aspect ratio / use |
+| --- | --- | --- |
+| Main 1 | 1024×1024 | Square, base size |
+| Main 2 | 1536×1536 | Square, intermediate comparison size |
+| Main 3 | 2048×2048 | Square, official Turbo example |
+| Main 4 | 928×1152 | Portrait, approximately 4:5 |
+| Main 5 | 896×1184 | Portrait, approximately 3:4 |
+| Main 6 | 832×1248 | Portrait, 2:3 |
+| Main 7 | 1024×1536 | Portrait, larger 2:3 |
+| Main 8 | 768×1376 | Portrait, approximately 9:16 |
+| Main 9 | 672×1568 | Portrait, rotated cinematic wide format |
+| More Portrait 1 | 864×1152 | Portrait, exact 3:4 |
+| More Portrait 2 | 720×1280 | Portrait, exact 9:16 |
+
+The base portrait candidates follow [Krea2 Harness](https://github.com/ANe5s/ComfyUI-Krea2-Harness#krea2-resolution-selector), rotated where needed. [Krea 2's official Turbo usage example](https://github.com/krea-ai/krea-2#usage) uses 2048×2048; 1536×1536 is an optional intermediate comparison size. This Profile is a practical preset collection, not an official list of training resolutions.
+
+All 11 presets are multiples of 16. To enable every size, set the host's `Resolution Step` to `16` (or `8`) and restart the WebUI.
+
+If you have saved edited Profiles in `data/profile_overrides.json`, those Profiles take priority over the built-ins. Add `Krea2` through the Profile Editor using the sizes above to keep your existing configuration.
 
 ## Install
 

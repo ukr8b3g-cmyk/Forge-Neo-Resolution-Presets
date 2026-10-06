@@ -19,12 +19,37 @@ Forge Neo／reForgeのtxt2img・img2img向け、コンパクトな解像度プ�
 
 - モデル系統別Profileの推奨解像度をワンクリック適用
 - `SDXL` ProfileはSDXL／Illustrious系の用途を想定し、縦長プリセットを追加収録
+- `Krea2` Profileは正方形3件と縦長プリセットを収録し、`More Portrait`に追加の2件を表示
 - 現在のWidth／Heightをユーザープリセットとして保存
 - 現在のProfileの固定プリセットから、生成ごとにランダム適用
 - `More Portrait`、`Reset`、`Undo`、`Copy`をコンパクトに搭載
 - 現在の総画素数を維持する任意アスペクト比計算
 - txt2img／img2imgごとに、Forge Neo標準のWidth／Heightへ直接反映
 - 画像処理、アップスケール、チェックポイント解析、生成処理は行わない
+
+## Krea2 Profile
+
+`Krea2` Profileは、次の順番で全11件を収録します。横長は標準のWidth／Height入れ替え操作で選べます。
+
+| 表示 | 幅×高さ | 比率・用途 |
+| --- | --- | --- |
+| Main 1 | 1024×1024 | 正方形・基本サイズ |
+| Main 2 | 1536×1536 | 正方形・比較用の中間サイズ |
+| Main 3 | 2048×2048 | 正方形・Turboの公式実行例 |
+| Main 4 | 928×1152 | 縦長・4:5系 |
+| Main 5 | 896×1184 | 縦長・3:4系 |
+| Main 6 | 832×1248 | 縦長・2:3 |
+| Main 7 | 1024×1536 | 縦長・2:3の大きめ |
+| Main 8 | 768×1376 | 縦長・9:16系 |
+| Main 9 | 672×1568 | 映画風の超横長を縦向きにしたサイズ |
+| More Portrait 1 | 864×1152 | 縦長・正確な3:4 |
+| More Portrait 2 | 720×1280 | 縦長・正確な9:16 |
+
+基本の縦長候補は[Krea2 Harness](https://github.com/ANe5s/ComfyUI-Krea2-Harness#krea2-resolution-selector)の寸法を必要に応じて縦向きにしたものです。2048×2048は[Krea 2の公式Turbo実行例](https://github.com/krea-ai/krea-2#usage)、1536×1536は任意の比較用中間サイズです。このProfileは実用的な候補の集まりで、公式の学習解像度一覧ではありません。
+
+全11件は16の倍数です。すべての寸法を使う場合は、WebUI側の`Resolution Step`を`16`（または`8`）へ変更し、再起動してください。
+
+`data/profile_overrides.json`に編集済みProfileを保存している場合は、その内容が標準Profileより優先されます。既存の設定を残して使うには、Profile Editorで`Krea2`を作成し、上記の寸法を追加してください。
 
 ## 配置
 
