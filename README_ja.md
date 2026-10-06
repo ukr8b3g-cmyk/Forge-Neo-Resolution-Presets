@@ -47,7 +47,7 @@ Forge Neo／reForgeのtxt2img・img2img向け、コンパクトな解像度プ�
 
 基本の縦長候補は[Krea2 Harness](https://github.com/ANe5s/ComfyUI-Krea2-Harness#krea2-resolution-selector)の寸法を必要に応じて縦向きにしたものです。2048×2048は[Krea 2の公式Turbo実行例](https://github.com/krea-ai/krea-2#usage)、1536×1536は任意の比較用中間サイズです。このProfileは実用的な候補の集まりで、公式の学習解像度一覧ではありません。
 
-全11件は16の倍数です。すべての寸法を使う場合は、WebUI側の`Resolution Step`を`16`（または`8`）へ変更し、再起動してください。
+標準の`Resolution Step = 64`でも全11件を選択できます。Stepに合わない寸法は近い有効値へ少し調整し、ボタンに「要求寸法 → 適用寸法」を表示します。Step 64では7件、Step 32では720×1280の1件だけが736×1280へ調整され、Step 16なら全11件が元の寸法のままです。標準スライダーの範囲内ですべての寸法を正確に使うには、`Settings` → `System` → `Resolution Step`を`16`（または`8`）へ変更し、`Apply settings`を押してWebUIを完全に再起動してください。`Reload UI`だけでは標準スライダーのStepは更新されません。
 
 `data/profile_overrides.json`に編集済みProfileを保存している場合は、その内容が標準Profileより優先されます。既存の設定を残して使うには、Profile Editorで`Krea2`を作成し、上記の寸法を追加してください。
 
@@ -69,9 +69,14 @@ Forge Neo／reForgeのtxt2img・img2img向け、コンパクトな解像度プ�
 
 ### Resolution Step互換性
 
-この拡張はForge Neo標準のWidth／Heightスライダー範囲と`Resolution Step`を読み取ります。現在のStepに合わないPresetは、別の解像度へ勝手に丸めず、メイン画面で無効化します。SettingsのProfile Editorには、選択中ProfileでStep非互換のPreset数を表示します。
+この拡張は**実際に有効な標準Width／Heightスライダー**の範囲とStepを読み取ります。Stepに合わないPresetは、範囲内の最も近いStepの倍数へ調整します。ちょうど中間なら大きい側へ丸めます。変更幅は各寸法について**元の値の5%以内**に制限し、範囲境界でもこの上限を守ります。要求寸法が標準スライダー範囲外の場合や、5%以内に有効な値がない場合は、大幅な変更を避けるため利用不可のままにします。
 
-現在のForge Neoの初期値は`Resolution Step = 64`です。標準Profileの一部の縦長Presetは`32`または`16`が必要です。標準Presetをすべて使う場合はForge Neo側のResolution Stepを`16`（または`8`）へ変更し、再起動してください。RandomizeではStep非互換のPresetを自動的に抽選対象から外します。
+- 調整するボタンには「要求寸法 → 適用寸法」を表示します。元のProfileやUser presetの保存ファイルは変更しません。
+- クリック、選択ハイライト、縦横切り替え、Reset、Randomizeは同じ調整後の寸法を使います。Randomizeは実際のUI制約に従い、利用不可の値を除外し、調整後に同じ寸法になった候補は重複させません。
+- txt2img／img2imgの案内には実際のStep、調整件数、利用不可件数を折り返し表示します（`More Portrait`を含む）。`Preset adjustment / unavailable details`で各調整値や利用不可の理由を確認できます。Profile変更に追従し、すべての寸法が調整不要かつ利用可能なら非表示になります。
+- SettingsのProfile Editorは**設定済み**のStepを表示します。完全再起動までは実際のスライダーと異なる場合があるため、実際の適用寸法はメイン画面のボタンで確認してください。
+
+標準Presetを元の寸法のまま使うには、`Settings` → `System` → `Resolution Step`を`16`（または`8`）へ変更し、`Apply settings`を押してWebUIを完全に再起動してください。`Reload UI`だけでは標準スライダーのStepは更新されません。この拡張がWebUI側の設定を自動変更することはありません。
 
 Advanced Ratio Calculatorは現在のResolution Stepと互換する丸め幅だけを表示し、結果をForge Neo標準のWidth／Heightスライダー範囲内に収めます。
 

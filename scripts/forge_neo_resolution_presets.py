@@ -10,6 +10,7 @@ import tempfile
 import threading
 from datetime import datetime
 from fractions import Fraction
+from html import escape
 from pathlib import Path
 from typing import Any
 
@@ -41,6 +42,7 @@ DEFAULT_ROUNDING = 8
 SUPPORTED_RESOLUTION_STEPS = (8, 16, 32, 64, 128, 256)
 MAX_HISTORY = 12
 MAX_IMPORT_BYTES = 5 * 1024 * 1024
+MAX_PRESET_ADJUSTMENT_PERCENT = 5
 HISTORY_LOCK = threading.Lock()
 
 
@@ -154,6 +156,94 @@ def _is_step_compatible(
         and minimum <= height_value <= maximum
         and width_value % step_value == 0
         and height_value % step_value == 0
+    )
+
+
+def _effective_preset(
+    width: int,
+    height: int,
+    minimum: int,
+    maximum: int,
+    step: int,
+) -> tuple[int, int] | None:
+    """Nearest in-range grid point, ties upward, with a 5% cap per dimension."""
+    if step <= 0 or not (minimum <= width <= maximum and minimum <= height <= maximum):
+        return None
+    first = ((minimum + step - 1) // step) * step
+    last = (maximum // step) * step
+    if first > last:
+        return None
+    result = []
+    for value in (width, height):
+        rounded = ((2 * value + step) // (2 * step)) * step
+        rounded = min(last, max(first, rounded))
+        if abs(rounded - value) * 100 > value * MAX_PRESET_ADJUSTMENT_PERCENT:
+            return None
+        result.append(rounded)
+    return result[0], result[1]
+
+
+def _preset_label(width: int, height: int, effective: tuple[int, int] | None) -> str:
+    label = f"{width}×{height}"
+    if effective is not None and effective != (width, height):
+        label += f" → {effective[0]}×{effective[1]}"
+    return label
+
+
+def _profile_compatibility_html(
+    profile_name: str,
+    values: list[tuple[int, int]],
+    minimum: int,
+    maximum: int,
+    step: int,
+) -> str:
+    """Explain the same adjusted dimensions and limits used by the buttons."""
+    unavailable = []
+    adjusted = []
+    out_of_range_count = 0
+    for width, height in values:
+        effective = _effective_preset(width, height, minimum, maximum, step)
+        if effective == (width, height):
+            continue
+        if effective is not None:
+            adjusted.append(f"<li>{_preset_label(width, height, effective)}</li>")
+            continue
+        if not (minimum <= width <= maximum and minimum <= height <= maximum):
+            out_of_range_count += 1
+            reason = f"outside the active Width/Height range {minimum}–{maximum}"
+        else:
+            reason = f"no in-range Step {step} size within {MAX_PRESET_ADJUSTMENT_PERCENT}% per dimension"
+        unavailable.append(f"<li>{width}×{height}: {reason}.</li>")
+
+    if not unavailable and not adjusted:
+        return ""
+
+    summary = (
+        f"<strong>{escape(profile_name)}: {len(adjusted)} of {len(values)} presets adjusted"
+        f"{f'; {len(unavailable)} unavailable' if unavailable else ''}.</strong> "
+        f"Active Resolution Step: {step}."
+    )
+    guidance = []
+    if adjusted or len(unavailable) > out_of_range_count:
+        # Edited Profiles may contain multiples of 8 that do not align to 16.
+        recommended_step = 16 if all(w % 16 == 0 and h % 16 == 0 for w, h in values) else 8
+        guidance.append(
+            f"Buttons show requested → applied sizes. Adjustments use the nearest valid step "
+            f"(ties round up), limited to {MAX_PRESET_ADJUSTMENT_PERCENT}% per dimension. "
+            "To use the exact requested sizes, open Settings → System → "
+            f"Resolution Step, set it to {recommended_step} → Apply settings → fully restart the WebUI. "
+            "Reload UI alone does not update the native slider step."
+        )
+    if out_of_range_count:
+        guidance.append(
+            f"{out_of_range_count} outside the active Width/Height range {minimum}–{maximum}. "
+            "Changing Resolution Step will not fix out-of-range sizes."
+        )
+    return (
+        f'<div role="status" aria-live="polite"><p>{summary}</p>'
+        f"<p>{' '.join(guidance)}</p></div>"
+        "<details><summary>Preset adjustment / unavailable details</summary>"
+        f"<ul>{''.join(adjusted + unavailable)}</ul></details>"
     )
 
 
@@ -474,6 +564,7 @@ def _refresh_user_controls(
     overwrite_button: Any | None = None,
     show_overwrite: bool = False,
     clear_name: bool = True,
+    native_constraints: tuple[int, int, int] | None = None,
 ) -> list[Any]:
     presets = _load_user_presets()
     outputs: list[Any] = [gr.update(value=f"User ({len(presets)})")]
@@ -481,10 +572,14 @@ def _refresh_user_controls(
     for index in range(MAX_USER_PRESETS):
         if index < len(presets):
             preset = presets[index]
+            effective = _effective_preset(preset["width"], preset["height"], *(native_constraints or _native_constraints()))
             variant = "primary" if _same_resolution(
-                preset["width"], preset["height"], current_width, current_height
+                *(effective or (None, None)), current_width, current_height
             ) else "secondary"
-            outputs.append(_button_update(preset["name"], variant=variant))
+            label = preset["name"]
+            if effective is not None and effective != (preset["width"], preset["height"]):
+                label += f" ({_preset_label(preset['width'], preset['height'], effective)})"
+            outputs.append(_button_update(label, variant=variant, interactive=effective is not None))
             outputs.append(gr.update(visible=True))
             outputs.append(gr.update(value=f"{preset['name']}  {preset['width']}×{preset['height']}"))
             outputs.append(_button_update("Delete"))
@@ -537,7 +632,7 @@ class ForgeNeoResolutionPresets(scripts.Script):
         elif elem_id == "img2img_generate":
             self.i2img_generate = component
 
-    def before_process(self, p, randomize_enabled=False, profile_name=None):
+    def before_process(self, p, randomize_enabled=False, profile_name=None, native_constraints=None):
         if not bool(randomize_enabled):
             return
         _, profiles, _ = _load_profiles()
@@ -547,12 +642,12 @@ class ForgeNeoResolutionPresets(scripts.Script):
                 (item["width"], item["height"])
                 for item in _load_user_presets()
             ]
-        step = _resolution_step()
-        compatible_values = [
-            (width, height)
-            for width, height in values
-            if _is_step_compatible(width, height, step=step)
-        ]
+        constraints = native_constraints or _native_constraints()
+        # Use the UI's active slider constraints, even if settings were saved without a restart.
+        compatible_values = list(dict.fromkeys(
+            effective for width, height in values
+            if (effective := _effective_preset(width, height, *constraints)) is not None
+        ))
         if compatible_values:
             p.width, p.height = random.choice(compatible_values)
 
@@ -591,9 +686,23 @@ class ForgeNeoResolutionPresets(scripts.Script):
                 step=native_step,
             )
 
+        def effective_preset(width, height):
+            return _effective_preset(width, height, native_minimum, native_maximum, native_step)
+
+        def refresh_user_controls(*args, **kwargs):
+            return _refresh_user_controls(
+                *args, **kwargs, native_constraints=(native_minimum, native_maximum, native_step)
+            )
+
+        def profile_compatibility(selected):
+            return _profile_compatibility_html(
+                selected, profiles.get(selected, []), native_minimum, native_maximum, native_step
+            )
+
         selected_profile = _load_last_profile(tab_key, profile_names, default_profile)
         randomize_default = _load_behavior_settings()["randomize_default"]
         randomize_state = gr.State(randomize_default)
+        native_constraints_state = gr.State((native_minimum, native_maximum, native_step))
         previous_resolution = gr.State(None)
         more_open = gr.State(False)
 
@@ -602,16 +711,16 @@ class ForgeNeoResolutionPresets(scripts.Script):
             for index in range(start, start + count):
                 if index < len(values):
                     width, height = values[index]
+                    effective = effective_preset(width, height)
                     updates.append(
                         _button_update(
-                            f"{width}×{height}",
+                            _preset_label(width, height, effective),
                             variant=_preset_button_variant(
-                                width,
-                                height,
+                                *(effective or (None, None)),
                                 current_width,
                                 current_height,
                             ),
-                            interactive=native_compatible(width, height),
+                            interactive=effective is not None,
                         )
                     )
                 else:
@@ -641,21 +750,21 @@ class ForgeNeoResolutionPresets(scripts.Script):
                 preset_buttons: list[Any] = []
                 for index in range(MAX_CORE_PRESETS):
                     initial = profiles[selected_profile][index] if index < len(profiles[selected_profile]) else None
-                    label = f"{initial[0]}×{initial[1]}" if initial else ""
+                    effective = effective_preset(*initial) if initial else None
+                    label = _preset_label(*initial, effective) if initial else ""
                     button = gr.Button(
                         label,
                         visible=initial is not None,
                         variant=(
                             _preset_button_variant(
-                                initial[0],
-                                initial[1],
+                                *(effective or (None, None)),
                                 initial_width,
                                 initial_height,
                             )
                             if initial
                             else "secondary"
                         ),
-                        interactive=native_compatible(initial[0], initial[1]) if initial else False,
+                        interactive=effective is not None,
                         elem_classes=["fnp__preset_button"],
                     )
                     preset_buttons.append(button)
@@ -696,50 +805,56 @@ class ForgeNeoResolutionPresets(scripts.Script):
                         if initial_index < len(profiles[selected_profile])
                         else None
                     )
+                    effective = effective_preset(*initial) if initial else None
                     extended_buttons.append(
                         gr.Button(
-                            f"{initial[0]}×{initial[1]}" if initial else "",
+                            _preset_label(*initial, effective) if initial else "",
                             visible=initial is not None,
                             variant=(
                                 _preset_button_variant(
-                                    initial[0],
-                                    initial[1],
+                                    *(effective or (None, None)),
                                     initial_width,
                                     initial_height,
                                 )
                                 if initial
                                 else "secondary"
                             ),
-                            interactive=native_compatible(initial[0], initial[1]) if initial else False,
+                            interactive=effective is not None,
                             elem_classes=["fnp__preset_button", "fnp__extended_button"],
                         )
                     )
+
+            initial_compatibility = profile_compatibility(selected_profile)
+            compatibility_notice = gr.HTML(
+                initial_compatibility,
+                visible=bool(initial_compatibility),
+                elem_classes=["fnp__compatibility_notice"],
+            )
 
             with gr.Row(elem_classes=["fnp__user_row"]):
                 user_count = gr.Markdown(f"User ({len(initial_user_presets)})", elem_classes=["fnp__user_count"])
                 user_buttons: list[Any] = []
                 for index in range(MAX_USER_PRESETS):
                     initial_user = initial_user_presets[index] if index < len(initial_user_presets) else None
+                    effective = effective_preset(initial_user["width"], initial_user["height"]) if initial_user else None
+                    user_label = initial_user["name"] if initial_user else ""
+                    if effective is not None and effective != (initial_user["width"], initial_user["height"]):
+                        user_label += f" ({_preset_label(initial_user['width'], initial_user['height'], effective)})"
                     user_buttons.append(
                         gr.Button(
-                            initial_user["name"] if initial_user else "",
+                            user_label,
                             visible=initial_user is not None,
                             variant=(
                                 "primary"
                                 if initial_user
                                 and _same_resolution(
-                                    initial_user["width"],
-                                    initial_user["height"],
+                                    *(effective or (None, None)),
                                     initial_width,
                                     initial_height,
                                 )
                                 else "secondary"
                             ),
-                            interactive=(
-                                native_compatible(initial_user["width"], initial_user["height"])
-                                if initial_user
-                                else False
-                            ),
+                            interactive=effective is not None,
                             elem_classes=["fnp__user_button"],
                         )
                     )
@@ -852,44 +967,38 @@ class ForgeNeoResolutionPresets(scripts.Script):
 
         def user_button_updates(current_width, current_height):
             presets = _load_user_presets()
-            return [
-                _button_update(
-                    presets[index]["name"] if index < len(presets) else "",
-                    visible=index < len(presets),
-                    variant=(
-                        "primary"
-                        if index < len(presets)
-                        and _same_resolution(
-                            presets[index]["width"],
-                            presets[index]["height"],
-                            current_width,
-                            current_height,
-                        )
-                        else "secondary"
-                    ),
-                    interactive=(
-                        native_compatible(presets[index]["width"], presets[index]["height"])
-                        if index < len(presets)
-                        else False
-                    ),
-                )
-                for index in range(MAX_USER_PRESETS)
-            ]
+            updates = []
+            for index in range(MAX_USER_PRESETS):
+                if index >= len(presets):
+                    updates.append(_button_update("", visible=False, interactive=False))
+                    continue
+                preset = presets[index]
+                effective = effective_preset(preset["width"], preset["height"])
+                label = preset["name"]
+                if effective is not None and effective != (preset["width"], preset["height"]):
+                    label += f" ({_preset_label(preset['width'], preset['height'], effective)})"
+                variant = "primary" if _same_resolution(
+                    *(effective or (None, None)), current_width, current_height
+                ) else "secondary"
+                updates.append(_button_update(label, variant=variant, interactive=effective is not None))
+            return updates
 
         def profile_changed(selected, current_width, current_height):
             _save_last_profile(tab_key, selected)
             values = profiles.get(selected, [])
             more_visible = len(values) > MAX_CORE_PRESETS
+            compatibility = profile_compatibility(selected)
             return builtin_button_updates(selected, current_width, current_height) + [
                 gr.update(value="More Portrait", visible=more_visible),
                 gr.update(visible=False),
                 False,
+                gr.update(value=compatibility, visible=bool(compatibility)),
             ]
 
         profile.change(
             profile_changed,
             inputs=[profile, width_component, height_component],
-            outputs=preset_buttons + extended_buttons + [more_button, extended_row, more_open],
+            outputs=preset_buttons + extended_buttons + [more_button, extended_row, more_open, compatibility_notice],
             show_progress="hidden",
         )
 
@@ -961,7 +1070,10 @@ class ForgeNeoResolutionPresets(scripts.Script):
             def apply_builtin_preset(selected, current_w, current_h, preset_index=preset_index):
                 values = profiles.get(selected, [])
                 if preset_index < len(values):
-                    preset_w, preset_h = values[preset_index]
+                    effective = effective_preset(*values[preset_index])
+                    if effective is None:
+                        return [gr.update() for _ in resolution_outputs]
+                    preset_w, preset_h = effective
                     if _same_resolution(preset_w, preset_h, current_w, current_h):
                         target_w, target_h = preset_h, preset_w
                     elif _same_resolution(preset_h, preset_w, current_w, current_h):
@@ -984,10 +1096,12 @@ class ForgeNeoResolutionPresets(scripts.Script):
             def apply_user_preset(selected, current_w, current_h, index=index):
                 presets = _load_user_presets()
                 if index < len(presets):
+                    effective = effective_preset(presets[index]["width"], presets[index]["height"])
+                    if effective is None:
+                        return [gr.update() for _ in resolution_outputs]
                     return resolution_action(
                         selected,
-                        presets[index]["width"],
-                        presets[index]["height"],
+                        *effective,
                         current_w,
                         current_h,
                     )
@@ -1019,9 +1133,10 @@ class ForgeNeoResolutionPresets(scripts.Script):
             previous = _resolution_pair(current_width, current_height)
             if not values:
                 return current_width, current_height, None, gr.update(interactive=False)
-            target_width, target_height = values[0]
-            if not native_compatible(target_width, target_height):
+            effective = effective_preset(*values[0])
+            if effective is None:
                 return current_width, current_height, previous, gr.update(interactive=previous is not None)
+            target_width, target_height = effective
             _record_resolution_history(tab_key, selected, target_width, target_height)
             return target_width, target_height, previous, gr.update(interactive=previous is not None)
 
@@ -1086,7 +1201,7 @@ class ForgeNeoResolutionPresets(scripts.Script):
                     raise ValueError("現在のWidth／Heightが不正です")
                 presets = _load_user_presets()
                 if any(preset["name"].casefold() == cleaned.casefold() for preset in presets):
-                    return _refresh_user_controls(
+                    return refresh_user_controls(
                         user_count,
                         user_buttons,
                         manage_rows,
@@ -1105,7 +1220,7 @@ class ForgeNeoResolutionPresets(scripts.Script):
                     raise ValueError(f"保存できるユーザープリセットは{MAX_USER_PRESETS}件までです")
                 presets.append({"name": cleaned, "width": int(width), "height": int(height)})
                 _write_user_presets(presets)
-                return _refresh_user_controls(
+                return refresh_user_controls(
                     user_count,
                     user_buttons,
                     manage_rows,
@@ -1119,7 +1234,7 @@ class ForgeNeoResolutionPresets(scripts.Script):
                     overwrite_button=overwrite_button,
                 )
             except (OSError, ValueError, TypeError) as exc:
-                return _refresh_user_controls(
+                return refresh_user_controls(
                     user_count,
                     user_buttons,
                     manage_rows,
@@ -1161,7 +1276,7 @@ class ForgeNeoResolutionPresets(scripts.Script):
                     "height": int(height),
                 }
                 _write_user_presets(presets)
-                return _refresh_user_controls(
+                return refresh_user_controls(
                     user_count,
                     user_buttons,
                     manage_rows,
@@ -1175,7 +1290,7 @@ class ForgeNeoResolutionPresets(scripts.Script):
                     overwrite_button=overwrite_button,
                 )
             except (OSError, ValueError, TypeError) as exc:
-                return _refresh_user_controls(
+                return refresh_user_controls(
                     user_count,
                     user_buttons,
                     manage_rows,
@@ -1232,7 +1347,7 @@ class ForgeNeoResolutionPresets(scripts.Script):
                     presets = unique[:MAX_USER_PRESETS]
                     result_count = len(presets)
                 _write_user_presets(presets)
-                return _refresh_user_controls(
+                return refresh_user_controls(
                     user_count,
                     user_buttons,
                     manage_rows,
@@ -1245,7 +1360,7 @@ class ForgeNeoResolutionPresets(scripts.Script):
                     current_height=current_height,
                 )
             except (OSError, ValueError, TypeError, json.JSONDecodeError) as exc:
-                return _refresh_user_controls(
+                return refresh_user_controls(
                     user_count,
                     user_buttons,
                     manage_rows,
@@ -1285,7 +1400,7 @@ class ForgeNeoResolutionPresets(scripts.Script):
             def delete_current(current_width, current_height, index=index):
                 presets = _load_user_presets()
                 if index >= len(presets):
-                    return _refresh_user_controls(
+                    return refresh_user_controls(
                         user_count,
                         user_buttons,
                         manage_rows,
@@ -1303,7 +1418,7 @@ class ForgeNeoResolutionPresets(scripts.Script):
                     message = "削除しました"
                 except OSError as exc:
                     message = f"削除できません: {exc}"
-                return _refresh_user_controls(
+                return refresh_user_controls(
                     user_count,
                     user_buttons,
                     manage_rows,
@@ -1384,4 +1499,4 @@ class ForgeNeoResolutionPresets(scripts.Script):
             show_progress="hidden",
         )
 
-        return [randomize_state, profile]
+        return [randomize_state, profile, native_constraints_state]

@@ -258,7 +258,7 @@ SETTINGS_MARKUP = r"""
   <details open class="fnp-settings-section fnp-settings-profile-section">
     <summary>Profile Editor</summary>
     <div class="fnp-settings-definition">Profile = a set of resolution presets.</div>
-    <div class="fnp-settings-helper" id="fnp-settings-resolution-step">Active Resolution Step: —</div>
+    <div class="fnp-settings-helper" id="fnp-settings-resolution-step">Configured Resolution Step: —</div>
     <div class="fnp-settings-toolbar fnp-settings-profile-toolbar">
       <label>Profile <select id="fnp-settings-profile" aria-label="Profile"></select></label>
       <button type="button" data-action="add-profile">New profile</button>

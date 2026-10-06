@@ -46,7 +46,7 @@ The `Krea2` profile contains 11 presets in the following order. Landscape sizes 
 
 The base portrait candidates follow [Krea2 Harness](https://github.com/ANe5s/ComfyUI-Krea2-Harness#krea2-resolution-selector), rotated where needed. [Krea 2's official Turbo usage example](https://github.com/krea-ai/krea-2#usage) uses 2048×2048; 1536×1536 is an optional intermediate comparison size. This Profile is a practical preset collection, not an official list of training resolutions.
 
-All 11 presets are multiples of 16. To enable every size, set the host's `Resolution Step` to `16` (or `8`) and restart the WebUI.
+All 11 presets remain selectable at the standard `Resolution Step = 64`: off-step dimensions are adjusted slightly to valid slider values, with requested → applied sizes shown on the buttons. At step 64, 7 presets are adjusted; at step 32, only 720×1280 is adjusted to 736×1280; at step 16, all 11 stay exact. To use every exact size within the native slider range, open `Settings` → `System` → `Resolution Step`, set it to `16` (or `8`), click `Apply settings`, and fully restart the WebUI. `Reload UI` alone does not update the native slider step.
 
 If you have saved edited Profiles in `data/profile_overrides.json`, those Profiles take priority over the built-ins. Add `Krea2` through the Profile Editor using the sizes above to keep your existing configuration.
 
@@ -68,9 +68,14 @@ Open `Settings` → `Extensions` → `Resolution Presets` to edit Profiles and m
 
 ### Resolution Step compatibility
 
-The extension reads the active Forge Neo Width/Height slider range and `Resolution Step`. Presets that do not align with the active step are disabled instead of being silently rounded to a different resolution. The Settings editor reports how many presets in the selected Profile are off-step.
+The extension reads the **active native Width/Height slider** range and step. Off-step presets are adapted to the nearest valid in-range multiple of that step; exact ties round upward. Each dimension may change by at most **5% of its requested value**, including at range boundaries. A requested size outside the native slider range, or without a valid result within that 5% cap, remains unavailable rather than being heavily resized.
 
-Current Forge Neo defaults to `Resolution Step = 64`. Some shipped portrait presets require `32` or `16`; set Forge Neo's Resolution Step to `16` (or `8`) and restart when you need every shipped preset. Randomize automatically excludes off-step presets.
+- Adjusted buttons show `requested → applied` sizes. The original Profile and user-preset files are not changed.
+- Clicks, matching highlights, portrait/landscape toggles, Reset, and Randomize use the same adjusted sizes. Randomize uses the active UI constraints, excludes unavailable sizes, and removes duplicate adjusted pairs.
+- A wrapping notice in txt2img/img2img shows the actual active step and adjusted/unavailable counts, including `More Portrait`. `Preset adjustment / unavailable details` lists every adjustment or reason. It updates with the Profile and disappears when every size is exact and available.
+- The Settings editor reports the **configured** step. It may differ from the running sliders until a full restart; the main-tab labels show what will actually be applied.
+
+To use the exact shipped sizes, open `Settings` → `System` → `Resolution Step`, set it to `16` (or `8`), click `Apply settings`, and fully restart the WebUI. `Reload UI` alone does not update the native slider step. The extension never changes this host setting for you.
 
 The Advanced Ratio Calculator uses only rounding values compatible with the active Resolution Step and clamps results to the native Width/Height slider range.
 
