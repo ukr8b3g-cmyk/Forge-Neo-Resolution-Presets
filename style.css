@@ -45,9 +45,9 @@
 #fnp__img2img_container .fnp__user_row {
     min-height: 31px !important;
     align-content: center !important;
-    flex-wrap: wrap !important;
-    height: auto !important;
-    max-height: none !important;
+    flex-wrap: nowrap !important;
+    height: 32.4px !important;
+    max-height: 32.4px !important;
     overflow: visible !important;
 }
 
@@ -226,15 +226,6 @@
     min-width: 52px !important;
 }
 
-#fnp__txt2img_container .fnp__user_button,
-#fnp__img2img_container .fnp__user_button,
-#fnp__txt2img_container .fnp__user_button button,
-#fnp__img2img_container .fnp__user_button button {
-    max-width: 100% !important;
-    white-space: normal !important;
-    overflow-wrap: anywhere;
-}
-
 #fnp__txt2img_container .fnp__more_button,
 #fnp__img2img_container .fnp__more_button {
     padding: 4px 7px !important;
@@ -254,42 +245,6 @@
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
-}
-
-/* Keep compatibility guidance separate from the clipped, single-line current info. */
-#fnp__txt2img_container .fnp__compatibility_notice,
-#fnp__img2img_container .fnp__compatibility_notice {
-    width: 100% !important;
-    min-width: 0 !important;
-    box-sizing: border-box;
-    margin: 2px 0 !important;
-    padding: 6px 8px !important;
-    border-left: 3px solid #b47b2c;
-    border-radius: 4px;
-    background: rgba(180, 123, 44, 0.12);
-    color: var(--body-text-color);
-    font-size: 0.82em;
-    line-height: 1.45;
-    white-space: normal !important;
-    overflow-wrap: anywhere;
-}
-
-.fnp__compatibility_notice p {
-    margin: 0 0 3px;
-}
-
-.fnp__compatibility_notice summary {
-    cursor: pointer;
-}
-
-.fnp__compatibility_notice summary:focus-visible {
-    outline: 2px solid var(--button-primary-background-fill);
-    outline-offset: 2px;
-}
-
-.fnp__compatibility_notice ul {
-    margin: 4px 0 0;
-    padding-left: 1.5em;
 }
 
 #fnp__txt2img_container .fnp__manage_button,

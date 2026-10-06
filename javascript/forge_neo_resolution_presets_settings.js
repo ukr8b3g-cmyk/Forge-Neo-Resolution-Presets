@@ -152,17 +152,8 @@
         return;
       }
       const presets = Array.isArray(profile.presets) ? profile.presets : [];
-      const configuredStep = Math.max(1, Number(state.resolution_step) || 8);
-      const offStepCount = presets.filter(preset => {
-        const width = Number(preset.width);
-        const height = Number(preset.height);
-        return Number.isInteger(width) && Number.isInteger(height)
-          && (width % configuredStep !== 0 || height % configuredStep !== 0);
-      }).length;
       if (resolutionStepInfo) {
-        resolutionStepInfo.textContent = offStepCount
-          ? `Configured Resolution Step: ${configuredStep} · ${offStepCount} preset(s) need step adjustment. Main tabs show requested → applied sizes (up to 5% per dimension) using the active slider range. Restart the WebUI after changing Resolution Step.`
-          : `Configured Resolution Step: ${configuredStep} · All presets align with this step. Main tabs use the active slider step and range; restart the WebUI to apply a changed step.`;
+        resolutionStepInfo.textContent = "Preset dimensions are applied exactly. Only the native Width/Height range limits availability.";
       }
       presetList.innerHTML = presets.map((preset, index) => {
         const errors = validationErrors.rows[profileKey(profileIndex, index)] || [];

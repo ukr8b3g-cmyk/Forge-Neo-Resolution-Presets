@@ -87,64 +87,64 @@ class ResolutionUITests(unittest.TestCase):
         self.script = script
         self.script_args = script.ui(is_img2img)
         self.profile = self.by_class("fnp__profile")[0]
-        self.notice = self.by_class("fnp__compatibility_notice")[0]
 
     def by_class(self, name):
         return [component for component in self.components if name in component.elem_classes]
 
-    def test_both_tabs_show_native_step_and_enable_all_krea2_sizes(self):
+    def test_both_tabs_enable_all_krea2_sizes_without_changing_labels_or_step(self):
         for tab in (False, True):
-            for step, adjusted in ((64, 7), (32, 1), (16, 0)):
+            for step in (64, 32, 16):
                 with self.subTest(img2img=tab, step=step):
                     self.build_ui(tab, step)
                     buttons = [button for button in self.by_class("fnp__preset_button") if button.visible]
                     self.assertEqual(len(buttons), 11)
-                    self.assertEqual(sum(button.interactive for button in buttons), 11)
-                    self.assertEqual(self.notice.visible, adjusted != 0)
-                    if adjusted:
-                        self.assertIn(f"Active Resolution Step: {step}", self.notice.value)
-                        self.assertEqual(self.notice.value.count("<li>"), adjusted)
+                    self.assertTrue(all(button.interactive for button in buttons))
+                    self.assertEqual([button.value for button in buttons], [f"{w}×{h}" for w, h in self.profiles["Krea2"]])
+                    self.assertEqual((self.width.step, self.height.step), (step, step))
+                    self.assertEqual(self.mod.shared.opts.res_step, 16)
+                    self.assertFalse(self.by_class("fnp__compatibility_notice"))
+                    self.assertFalse([component for component in self.components if component.kind == "HTML"])
 
-    def test_profile_changes_update_and_clear_notice_without_changing_resolution(self):
+    def test_profile_changes_preserve_exact_labels_without_changing_resolution(self):
         for tab in (False, True):
             with self.subTest(img2img=tab):
                 self.build_ui(tab)
-                for selected, count in (("Compatible", 0), ("Anima", 4), ("Krea2", 7), ("Compatible", 0)):
+                for selected in ("Compatible", "Anima", "Krea2", "Compatible"):
                     self.profile.value = selected
                     self.profile.trigger("change")
-                    self.assertEqual(self.notice.visible, count != 0)
-                    self.assertEqual(self.notice.value.count("<li>"), count)
-                    if count:
-                        self.assertIn(f"{selected}: {count} of", self.notice.value)
-                    else:
-                        self.assertEqual(self.notice.value, "")
+                    buttons = [button for button in self.by_class("fnp__preset_button") if button.visible]
+                    self.assertEqual([button.value for button in buttons], [f"{w}×{h}" for w, h in self.profiles[selected]])
+                    self.assertTrue(all(button.interactive for button in buttons))
                     self.assertEqual((self.width.value, self.height.value), (1024, 1024))
 
-    def test_range_notice_matches_disabled_buttons_even_at_step_16(self):
-        self.build_ui(step=16, maximum=1536)
+    def test_range_limits_disable_only_out_of_range_buttons(self):
+        self.build_ui(step=64, maximum=1536)
         buttons = [button for button in self.by_class("fnp__preset_button") if button.visible]
-        self.assertEqual(sum(not button.interactive for button in buttons), 2)
-        self.assertIn("2 unavailable", self.notice.value)
-        self.assertIn("2 outside the active Width/Height range 64–1536", self.notice.value)
-        self.assertNotIn("off-step", self.notice.value)
+        self.assertEqual([button.value for button in buttons if not button.interactive], ["2048×2048", "672×1568"])
+        self.assertTrue(next(button for button in buttons if button.value == "928×1152").interactive)
 
-    def test_adjusted_orientation_and_dimension_changes_preserve_notice(self):
-        self.build_ui()
-        notice = self.notice.value
-        button = next(button for button in self.by_class("fnp__preset_button") if button.value == "928×1152 → 960×1152")
-        button.trigger("click")
-        self.assertEqual((self.width.value, self.height.value), (960, 1152))
-        self.assertEqual(button.variant, "primary")
-        self.assertIn("960×1152", self.by_class("fnp__current_info")[0].value)
-        button.trigger("click")
-        self.assertEqual((self.width.value, self.height.value), (1152, 960))
-        self.assertEqual(button.variant, "stop")
-        button.trigger("click")
-        self.assertEqual((self.width.value, self.height.value), (960, 1152))
-        self.width.trigger("change")
-        self.assertEqual(self.notice.value, notice)
-        self.assertTrue(self.notice.visible)
-        self.assertEqual(sum(button.visible and not button.interactive for button in self.by_class("fnp__preset_button")), 0)
+    def test_exact_selection_orientation_change_and_undo_round_trip(self):
+        for tab in (False, True):
+            with self.subTest(img2img=tab):
+                self.build_ui(tab)
+                button = next(button for button in self.by_class("fnp__preset_button") if button.value == "928×1152")
+                button.trigger("click")
+                self.assertEqual((self.width.value, self.height.value), (928, 1152))
+                self.assertEqual(button.variant, "primary")
+                self.assertIn("928×1152", self.by_class("fnp__current_info")[0].value)
+                self.width.trigger("change")
+                self.height.trigger("change")
+                self.assertEqual((self.width.value, self.height.value), (928, 1152))
+                button.trigger("click")
+                self.assertEqual((self.width.value, self.height.value), (1152, 928))
+                self.assertEqual(button.variant, "stop")
+                self.by_class("fnp__undo_button")[0].trigger("click")
+                self.assertEqual((self.width.value, self.height.value), (928, 1152))
+                # Native Forge's swap callback is also an exact (height, width) return.
+                self.width.value, self.height.value = self.height.value, self.width.value
+                self.width.trigger("change")
+                self.assertEqual((self.width.value, self.height.value), (1152, 928))
+                self.assertEqual(button.variant, "stop")
 
     def test_randomize_receives_active_slider_constraints_from_ui(self):
         self.build_ui()
@@ -154,35 +154,35 @@ class ResolutionUITests(unittest.TestCase):
         process = types.SimpleNamespace(width=512, height=512)
         with patch.object(self.mod.random, "choice", side_effect=lambda values: values[-1]):
             self.script.before_process(process, *(component.value for component in self.script_args))
-        self.assertEqual((process.width, process.height), (704, 1280))
+        self.assertEqual((process.width, process.height), (720, 1280))
 
-    def test_user_preset_initial_click_and_refresh_use_active_adjustment(self):
+    def test_user_preset_click_and_management_refresh_keep_exact_values(self):
         custom = [{"name": "Portrait", "width": 720, "height": 1280}]
         with patch.object(self.mod, "_load_user_presets", return_value=custom):
             self.build_ui()
             button = self.by_class("fnp__user_button")[0]
-            self.assertEqual(button.value, "Portrait (720×1280 → 704×1280)")
+            self.assertEqual(button.value, "Portrait")
             self.assertTrue(button.interactive)
             button.trigger("click")
-            self.assertEqual((self.width.value, self.height.value), (704, 1280))
+            self.assertEqual((self.width.value, self.height.value), (720, 1280))
             self.assertEqual(button.variant, "primary")
             self.width.trigger("change")
-            self.assertEqual(button.value, "Portrait (720×1280 → 704×1280)")
-            # Management refreshes must not revert to the saved-but-inactive Step 16.
-            updates = self.mod._refresh_user_controls(None, [], [], [], [], current_width=704, current_height=1280, native_constraints=(64, 2048, 64))
+            self.assertEqual(button.value, "Portrait")
+            # Management refreshes must preserve the name and exact dimensions.
+            updates = self.mod._refresh_user_controls(None, [], [], [], [], current_width=720, current_height=1280, native_constraints=(64, 2048, 64))
             self.assertEqual(updates[1]["value"], button.value)
             self.assertTrue(updates[1]["interactive"])
             self.assertEqual(updates[1]["variant"], "primary")
 
-    def test_reset_uses_adjusted_first_preset_and_unsupported_click_does_nothing(self):
-        self.profiles["Krea2"] = [(928, 1152), (608, 1024)]
+    def test_reset_keeps_exact_first_preset_and_out_of_range_click_does_nothing(self):
+        self.profiles["Krea2"] = [(928, 1152), (4096, 4096)]
         self.build_ui()
         self.by_class("fnp__reset_button")[0].trigger("click")
-        self.assertEqual((self.width.value, self.height.value), (960, 1152))
+        self.assertEqual((self.width.value, self.height.value), (928, 1152))
         blocked = self.by_class("fnp__preset_button")[1]
         self.assertFalse(blocked.interactive)
         blocked.trigger("click")
-        self.assertEqual((self.width.value, self.height.value), (960, 1152))
+        self.assertEqual((self.width.value, self.height.value), (928, 1152))
 
 
 if __name__ == "__main__":
