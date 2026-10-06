@@ -7,8 +7,6 @@
 
 #fnp__txt2img_container .fnp__preset_row,
 #fnp__img2img_container .fnp__preset_row,
-#fnp__txt2img_container .fnp__extended_row,
-#fnp__img2img_container .fnp__extended_row,
 #fnp__txt2img_container .fnp__user_row,
 #fnp__img2img_container .fnp__user_row,
 #fnp__txt2img_container .fnp__ratio_row,
@@ -26,19 +24,11 @@
 
 #fnp__txt2img_container .fnp__preset_row > *,
 #fnp__img2img_container .fnp__preset_row > *,
-#fnp__txt2img_container .fnp__extended_row > *,
-#fnp__img2img_container .fnp__extended_row > *,
 #fnp__txt2img_container .fnp__user_row > *,
 #fnp__img2img_container .fnp__user_row > *,
 #fnp__txt2img_container .fnp__ratio_row > *,
 #fnp__img2img_container .fnp__ratio_row > * {
     flex: 0 0 auto !important;
-}
-
-#fnp__txt2img_container .fnp__preset_row,
-#fnp__img2img_container .fnp__preset_row {
-    min-height: 69px !important;
-    align-content: center !important;
 }
 
 #fnp__txt2img_container .fnp__user_row,
@@ -94,7 +84,7 @@
     width: 100% !important;
     max-width: 100% !important;
     margin-left: auto !important;
-    flex: 1 1 100% !important;
+    flex: 0 0 auto !important;
     flex-wrap: wrap !important;
     box-sizing: border-box !important;
     overflow: visible !important;
@@ -137,8 +127,6 @@
 #fnp__img2img_container .fnp__preset_button,
 #fnp__txt2img_container .fnp__user_button,
 #fnp__img2img_container .fnp__user_button,
-#fnp__txt2img_container .fnp__more_button,
-#fnp__img2img_container .fnp__more_button,
 #fnp__txt2img_container .fnp__randomize_button,
 #fnp__img2img_container .fnp__randomize_button,
 #fnp__txt2img_container .fnp__reset_button,
@@ -224,12 +212,6 @@
 #fnp__txt2img_container .fnp__user_count,
 #fnp__img2img_container .fnp__user_count {
     min-width: 52px !important;
-}
-
-#fnp__txt2img_container .fnp__more_button,
-#fnp__img2img_container .fnp__more_button {
-    padding: 4px 7px !important;
-    font-size: 0.78em !important;
 }
 
 #fnp__txt2img_container .fnp__current_info,

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import importlib.util
 import json
+import re
 import sys
 import types
 import unittest
@@ -149,6 +150,28 @@ class ExactPresetTests(unittest.TestCase):
 
 
 class RepositoryRegressionTests(unittest.TestCase):
+    def test_preset_layout_wraps_without_fixed_height_or_portrait_grouping(self):
+        css = (ROOT / "style.css").read_text(encoding="utf-8")
+        for tab in ("txt2img", "img2img"):
+            selector = f"#fnp__{tab}_container .fnp__preset_row"
+            rules = [body for selectors, body in re.findall(r"([^{}]+)\{([^{}]+)\}", css)
+                     if selector in [item.strip() for item in selectors.split(",")]]
+            declarations = "\n".join(rules)
+            self.assertIn("flex-wrap: wrap", declarations)
+            self.assertIn("column-gap: 6px !important", declarations)
+            self.assertIn("row-gap: 4px !important", declarations)
+            self.assertNotIn("height:", declarations)
+        for path in (
+            MODULE_PATH,
+            ROOT / "scripts" / "forge_neo_resolution_presets_settings.py",
+            ROOT / "javascript" / "forge_neo_resolution_presets_settings.js",
+            ROOT / "style.css",
+        ):
+            with self.subTest(path=path.name):
+                source = path.read_text(encoding="utf-8")
+                for obsolete in ("More Portrait", "Less Portrait", "fnp__more_button", "fnp__extended_row"):
+                    self.assertNotIn(obsolete, source)
+
     def test_no_adjustment_labels_or_warning_panel_remain(self):
         source = MODULE_PATH.read_text(encoding="utf-8")
         self.assertNotIn("_profile_compatibility_html", source)

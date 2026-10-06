@@ -9,6 +9,8 @@ from test_resolution_helpers import load_extension_module
 
 
 class Component:
+    context_stack = []
+
     def __init__(self, kind, value=None, **kwargs):
         self.kind = kind
         self.value = value
@@ -16,13 +18,22 @@ class Component:
         self.interactive = True
         self.elem_classes = []
         self.events = {}
+        self.children = []
+        self.parent = self.context_stack[-1] if self.context_stack else None
+        if self.parent is not None:
+            self.parent.children.append(self)
         self.__dict__.update(kwargs)
 
     def __enter__(self):
+        self.context_stack.append(self)
         return self
 
     def __exit__(self, *args):
+        self.context_stack.pop()
         return False
+
+    def is_visible(self):
+        return self.visible and (self.parent is None or self.parent.is_visible())
 
     def click(self, fn=None, **kwargs):
         self.events.setdefault("click", []).append((fn, kwargs))
@@ -53,6 +64,7 @@ class Component:
 
 class ResolutionUITests(unittest.TestCase):
     def setUp(self):
+        Component.context_stack.clear()
         self.mod = load_extension_module()
         self.components = []
         for name in ("Accordion", "Button", "Column", "Dropdown", "File", "HTML", "Markdown", "Row", "State", "Textbox", "UploadButton"):
@@ -75,7 +87,7 @@ class ResolutionUITests(unittest.TestCase):
             patcher.start()
             self.addCleanup(patcher.stop)
 
-    def build_ui(self, is_img2img=False, step=64, maximum=2048):
+    def build_ui(self, is_img2img=False, step=64, maximum=2048, selected_profile="Krea2"):
         self.components.clear()
         self.mod.shared.opts.res_step = 16
         script = self.mod.ForgeNeoResolutionPresets()
@@ -85,11 +97,71 @@ class ResolutionUITests(unittest.TestCase):
         script.after_component(self.width, elem_id=f"{tab}_width")
         script.after_component(self.height, elem_id=f"{tab}_height")
         self.script = script
-        self.script_args = script.ui(is_img2img)
+        with patch.object(self.mod, "_load_last_profile", return_value=selected_profile):
+            self.script_args = script.ui(is_img2img)
         self.profile = self.by_class("fnp__profile")[0]
 
     def by_class(self, name):
         return [component for component in self.components if name in component.elem_classes]
+
+    def assert_unified_preset_row(self, selected):
+        rows = self.by_class("fnp__preset_row")
+        self.assertEqual(len(rows), 1)
+        row = rows[0]
+        buttons = self.by_class("fnp__preset_button")
+        self.assertEqual(len(buttons), self.mod.MAX_BUILTIN_PRESETS)
+        self.assertEqual(row.children, buttons)
+        self.assertTrue(all(button.parent is row for button in buttons))
+        visible = [button for button in buttons if button.is_visible()]
+        self.assertEqual([button.value for button in visible], [f"{w}×{h}" for w, h in self.profiles[selected]])
+        self.assertFalse(self.by_class("fnp__more_button"))
+        self.assertFalse(self.by_class("fnp__extended_row"))
+        toolbar = self.by_class("fnp__profile_group")[0]
+        self.assertIs(toolbar.parent, row.parent)
+        self.assertGreater(row.parent.children.index(toolbar), row.parent.children.index(row))
+
+    def test_all_profiles_start_fully_visible_in_one_row_on_both_tabs(self):
+        for tab in (False, True):
+            for selected in self.profiles:
+                with self.subTest(img2img=tab, profile=selected):
+                    self.build_ui(tab, selected_profile=selected)
+                    self.assert_unified_preset_row(selected)
+
+    def test_profile_switches_keep_all_fourteen_slots_in_continuous_order(self):
+        self.profiles["Custom14"] = [(512 + 8 * index, 1024) for index in range(14)]
+        for tab in (False, True):
+            self.build_ui(tab, selected_profile="Custom14")
+            for selected in ("Custom14", "Compatible", *self.profiles, "Custom14", "Compatible"):
+                with self.subTest(img2img=tab, profile=selected):
+                    self.profile.value = selected
+                    self.profile.trigger("change")
+                    self.assert_unified_preset_row(selected)
+                    self.width.trigger("change")
+                    self.height.trigger("change")
+                    self.assert_unified_preset_row(selected)
+                    self.assertEqual((self.width.value, self.height.value), (1024, 1024))
+
+    def test_former_extra_slots_apply_toggle_highlight_and_undo_on_both_tabs(self):
+        self.profiles["Custom14"] = [(512 + 8 * index, 1024) for index in range(14)]
+        for tab in (False, True):
+            for selected in ("Krea2", "Anima", "Custom14"):
+                self.build_ui(tab, selected_profile=selected)
+                for index in range(9, len(self.profiles[selected])):
+                    with self.subTest(img2img=tab, profile=selected, index=index):
+                        button = self.by_class("fnp__preset_button")[index]
+                        width, height = self.profiles[selected][index]
+                        self.assertTrue(button.is_visible())
+                        button.trigger("click")
+                        self.assertEqual((self.width.value, self.height.value), (width, height))
+                        self.assertEqual(button.variant, "primary")
+                        button.trigger("click")
+                        self.assertEqual((self.width.value, self.height.value), (height, width))
+                        self.assertEqual(button.variant, "stop")
+                        self.by_class("fnp__undo_button")[0].trigger("click")
+                        self.width.trigger("change")
+                        self.assertEqual((self.width.value, self.height.value), (width, height))
+                        self.assertEqual(button.variant, "primary")
+                        self.assert_unified_preset_row(selected)
 
     def test_both_tabs_enable_all_krea2_sizes_without_changing_labels_or_step(self):
         for tab in (False, True):

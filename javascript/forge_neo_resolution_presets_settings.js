@@ -162,9 +162,9 @@
         const duplicateDisabled = presets.length >= 14 ? " disabled" : "";
         const width = Number.isFinite(Number(preset.width)) ? preset.width : "";
         const height = Number.isFinite(Number(preset.height)) ? preset.height : "";
-        return `<div class="fnp-settings-preset-row${invalid}" draggable="true" tabindex="0" data-index="${index}" aria-label="${index < 9 ? "Main" : "More Portrait"} ${index + 1}">
+        return `<div class="fnp-settings-preset-row${invalid}" draggable="true" tabindex="0" data-index="${index}" aria-label="Preset ${index + 1}">
           <span class="fnp-settings-drag" title="Drag to reorder" aria-label="Drag to reorder">↕</span>
-          <span class="fnp-settings-slot">${index < 9 ? "Main" : "More"} ${index + 1}</span>
+          <span class="fnp-settings-slot">Preset ${index + 1}</span>
           <input type="number" min="16" max="16384" step="8" data-field="width" aria-label="${index + 1} Width" value="${escape(width)}">
           <span aria-hidden="true">×</span>
           <input type="number" min="16" max="16384" step="8" data-field="height" aria-label="${index + 1} Height" value="${escape(height)}">

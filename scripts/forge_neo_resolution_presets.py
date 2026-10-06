@@ -31,9 +31,7 @@ BEHAVIOR_SETTINGS_PATH = DATA_PATH / "behavior_settings.json"
 HISTORY_PATH = DATA_PATH / "resolution_history.json"
 
 MAX_USER_PRESETS = 8
-MAX_CORE_PRESETS = 9
-MAX_EXTENDED_PRESETS = 5
-MAX_BUILTIN_PRESETS = MAX_CORE_PRESETS + MAX_EXTENDED_PRESETS
+MAX_BUILTIN_PRESETS = 14
 MAX_NAME_LENGTH = 32
 MIN_DIMENSION = 16
 MAX_DIMENSION = 16384
@@ -612,11 +610,10 @@ class ForgeNeoResolutionPresets(scripts.Script):
         randomize_state = gr.State(randomize_default)
         native_constraints_state = gr.State((native_minimum, native_maximum, native_step))
         previous_resolution = gr.State(None)
-        more_open = gr.State(False)
 
-        def preset_button_updates(values, start, count, current_width, current_height):
+        def preset_button_updates(values, current_width, current_height):
             updates = []
-            for index in range(start, start + count):
+            for index in range(MAX_BUILTIN_PRESETS):
                 if index < len(values):
                     width, height = values[index]
                     exact = exact_preset(width, height)
@@ -643,9 +640,7 @@ class ForgeNeoResolutionPresets(scripts.Script):
         def builtin_button_updates(selected, current_width, current_height):
             values = profiles.get(selected, [])
             return preset_button_updates(
-                values, 0, MAX_CORE_PRESETS, current_width, current_height
-            ) + preset_button_updates(
-                values, MAX_CORE_PRESETS, MAX_EXTENDED_PRESETS, current_width, current_height
+                values, current_width, current_height
             )
 
         with gr.Accordion(
@@ -656,7 +651,7 @@ class ForgeNeoResolutionPresets(scripts.Script):
         ):
             with gr.Row(elem_id=preset_row_id, elem_classes=["fnp__preset_row"]):
                 preset_buttons: list[Any] = []
-                for index in range(MAX_CORE_PRESETS):
+                for index in range(MAX_BUILTIN_PRESETS):
                     initial = profiles[selected_profile][index] if index < len(profiles[selected_profile]) else None
                     exact = exact_preset(*initial) if initial else None
                     label = f"{initial[0]}×{initial[1]}" if initial else ""
@@ -677,60 +672,32 @@ class ForgeNeoResolutionPresets(scripts.Script):
                     )
                     preset_buttons.append(button)
 
-                with gr.Row(elem_classes=["fnp__profile_group"]):
-                    randomize_button = gr.Button(
-                        "Randomize",
-                        size="sm",
-                        variant="primary" if randomize_default else "secondary",
-                        elem_classes=["fnp__randomize_button"],
-                    )
-                    reset_button = gr.Button("Reset", size="sm", elem_classes=["fnp__reset_button"])
-                    undo_button = gr.Button(
-                        "Undo",
-                        size="sm",
-                        interactive=False,
-                        elem_classes=["fnp__undo_button"],
-                    )
-                    copy_button = gr.Button("Copy", size="sm", elem_classes=["fnp__copy_button"])
-                    gr.Markdown("Profile", elem_classes=["fnp__profile_label"])
-                    profile = gr.Dropdown(
-                        choices=profile_names,
-                        value=selected_profile,
-                        show_label=False,
-                        container=False,
-                        filterable=False,
-                        min_width=0,
-                        elem_id=profile_id,
-                        elem_classes=["fnp__profile"],
-                    )
-
-            extended_buttons: list[Any] = []
-            with gr.Row(visible=False, elem_classes=["fnp__extended_row"]) as extended_row:
-                for index in range(MAX_EXTENDED_PRESETS):
-                    initial_index = MAX_CORE_PRESETS + index
-                    initial = (
-                        profiles[selected_profile][initial_index]
-                        if initial_index < len(profiles[selected_profile])
-                        else None
-                    )
-                    exact = exact_preset(*initial) if initial else None
-                    extended_buttons.append(
-                        gr.Button(
-                            f"{initial[0]}×{initial[1]}" if initial else "",
-                            visible=initial is not None,
-                            variant=(
-                                _preset_button_variant(
-                                    *(exact or (None, None)),
-                                    initial_width,
-                                    initial_height,
-                                )
-                                if initial
-                                else "secondary"
-                            ),
-                            interactive=exact is not None,
-                            elem_classes=["fnp__preset_button", "fnp__extended_button"],
-                        )
-                    )
+            with gr.Row(elem_classes=["fnp__profile_group"]):
+                randomize_button = gr.Button(
+                    "Randomize",
+                    size="sm",
+                    variant="primary" if randomize_default else "secondary",
+                    elem_classes=["fnp__randomize_button"],
+                )
+                reset_button = gr.Button("Reset", size="sm", elem_classes=["fnp__reset_button"])
+                undo_button = gr.Button(
+                    "Undo",
+                    size="sm",
+                    interactive=False,
+                    elem_classes=["fnp__undo_button"],
+                )
+                copy_button = gr.Button("Copy", size="sm", elem_classes=["fnp__copy_button"])
+                gr.Markdown("Profile", elem_classes=["fnp__profile_label"])
+                profile = gr.Dropdown(
+                    choices=profile_names,
+                    value=selected_profile,
+                    show_label=False,
+                    container=False,
+                    filterable=False,
+                    min_width=0,
+                    elem_id=profile_id,
+                    elem_classes=["fnp__profile"],
+                )
 
             with gr.Row(elem_classes=["fnp__user_row"]):
                 user_count = gr.Markdown(f"User ({len(initial_user_presets)})", elem_classes=["fnp__user_count"])
@@ -757,11 +724,6 @@ class ForgeNeoResolutionPresets(scripts.Script):
                             elem_classes=["fnp__user_button"],
                         )
                     )
-                more_button = gr.Button(
-                    "More Portrait",
-                    size="sm",
-                    elem_classes=["fnp__more_button"],
-                )
                 current_info = gr.Markdown(
                     _current_info(initial_width, initial_height),
                     elem_classes=["fnp__current_info"],
@@ -882,33 +844,12 @@ class ForgeNeoResolutionPresets(scripts.Script):
 
         def profile_changed(selected, current_width, current_height):
             _save_last_profile(tab_key, selected)
-            values = profiles.get(selected, [])
-            more_visible = len(values) > MAX_CORE_PRESETS
-            return builtin_button_updates(selected, current_width, current_height) + [
-                gr.update(value="More Portrait", visible=more_visible),
-                gr.update(visible=False),
-                False,
-            ]
+            return builtin_button_updates(selected, current_width, current_height)
 
         profile.change(
             profile_changed,
             inputs=[profile, width_component, height_component],
-            outputs=preset_buttons + extended_buttons + [more_button, extended_row, more_open],
-            show_progress="hidden",
-        )
-
-        def toggle_more(is_open):
-            next_open = not bool(is_open)
-            return (
-                gr.update(visible=next_open),
-                gr.update(value="Less Portrait" if next_open else "More Portrait"),
-                next_open,
-            )
-
-        more_button.click(
-            toggle_more,
-            inputs=[more_open],
-            outputs=[extended_row, more_button, more_open],
+            outputs=preset_buttons,
             show_progress="hidden",
         )
 
@@ -928,7 +869,7 @@ class ForgeNeoResolutionPresets(scripts.Script):
                 dimension_change(
                     dimension_changed,
                     inputs=[profile, width_component, height_component],
-                    outputs=preset_buttons + extended_buttons + user_buttons + [current_info],
+                    outputs=preset_buttons + user_buttons + [current_info],
                     show_progress="hidden",
                 )
             dimension_release = getattr(dimension_component, "release", None)
@@ -945,7 +886,7 @@ class ForgeNeoResolutionPresets(scripts.Script):
             height_component,
             previous_resolution,
             undo_button,
-        ] + preset_buttons + extended_buttons + user_buttons + [current_info]
+        ] + preset_buttons + user_buttons + [current_info]
 
         def resolution_action(selected, target_w, target_h, current_w, current_h):
             _record_resolution_history(tab_key, selected, target_w, target_h)
@@ -959,7 +900,7 @@ class ForgeNeoResolutionPresets(scripts.Script):
                 target_w, target_h
             ) + [_current_info(target_w, target_h)]
 
-        for index, button in enumerate(preset_buttons + extended_buttons):
+        for index, button in enumerate(preset_buttons):
             preset_index = index
 
             def apply_builtin_preset(selected, current_w, current_h, preset_index=preset_index):

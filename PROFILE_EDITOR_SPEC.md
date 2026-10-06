@@ -4,10 +4,10 @@
 
 - 対象：Forge Neo Resolution Presets
 - 対象画面：`Settings` → `Extensions` → `Resolution Presets` → `Profile Editor`
-- 状態：実装前の確定仕様案
+- 状態：実装仕様（2026-10-06 全Presetの常時表示に合わせて更新）
 - 作成日：2026-07-18
 
-本仕様は、Profileと解像度Presetを初見でも迷わず編集・追加・複製・削除・保存できることを目的とする。メインのtxt2img／img2img UIと、既存のWidth／Height処理は変更しない。
+本仕様は、Profileと解像度Presetを初見でも迷わず編集・追加・複製・削除・保存できることを目的とする。メインのtxt2img／img2imgは全Presetの連続表示とし、既存のWidth／Height処理は変更しない。
 
 ## 2. 用語
 
@@ -15,8 +15,7 @@
 | --- | --- |
 | Profile | 解像度Presetをまとめたセット。例：Anima、SDXL、Flux |
 | Preset | 1つのWidth／Height。例：1024×1344 |
-| Main row | Profileの先頭9件。通常表示されるPreset |
-| More Portrait | 10件目以降。追加表示される縦長Preset |
+| Preset row | Profileの全Presetを順番に常時表示し、横幅に合わせて折り返す領域 |
 | Draft | ブラウザ上で編集中、まだ保存していない状態 |
 | Built-in | `profiles.json`に収録された標準Profile |
 
@@ -44,8 +43,8 @@ Profile [Anima (default) ▼]
 
 ● Unsaved changes
 Width × Height                         Actions
-↕ Main 1  [1024] × [1024]  [Duplicate] [Delete]
-↕ Main 2  [1280] × [1280]  [Duplicate] [Delete]
+↕ Preset 1  [1024] × [1024]  [Duplicate] [Delete]
+↕ Preset 2  [1280] × [1280]  [Duplicate] [Delete]
 ...
 
 [+ Add preset]                         [Save changes]
@@ -84,7 +83,7 @@ Profile操作欄の下に、次の説明を小さく表示する。
 
 ```text
 Edit Width / Height directly. Drag ↕ to reorder. Changes apply after Save changes.
-First 9 presets appear in Main row; the rest appear in More Portrait.
+All presets appear together in this order and wrap to fit the available width.
 ```
 
 保存状態は説明文とは別に表示する。
@@ -109,11 +108,11 @@ First 9 presets appear in Main row; the rest appear in More Portrait.
 1行は次の順序で表示する。
 
 ```text
-[↕] [Main 1] [Width] × [Height] [Duplicate] [Delete]
+[↕] [Preset 1] [Width] × [Height] [Duplicate] [Delete]
 ```
 
 - `↕`：ドラッグ用ハンドル。`Drag to reorder`のツールチップとアクセシブル名を付ける。
-- `Main 1`／`More 10`：順番から自動生成し、直接編集不可。
+- `Preset 1`／`Preset 10`：順番から自動生成し、直接編集不可。
 - Width／Height：数値入力。現在の値を直接修正できる。
 - 行の`Duplicate`：対象Presetを1件複製し、直後に挿入する。
 - 行の`Delete`：対象Presetを削除する。
@@ -132,7 +131,7 @@ First 9 presets appear in Main row; the rest appear in More Portrait.
 | `+ Add preset` | 選択中Profileの末尾に追加。14件を超える場合は無効化または理由を表示 |
 | 行`Duplicate` | 直後に複製。複製後のWidth／Heightを編集して保存する流れを想定 |
 | 行`Delete` | その行をDraftから削除。Profileには最低1件を残す |
-| ドラッグ | 行を移動し、Main／More Portraitの境界も順番に応じて更新 |
+| ドラッグ | 行を移動し、Preset番号を順番に応じて更新 |
 
 追加するPresetの初期値は、既存と重複しない有効な解像度を選ぶ。重複する値を作った場合は行の近くに`Duplicate resolution`を表示し、保存できない理由を明示する。
 
@@ -270,7 +269,7 @@ Profile Editor本体の操作を邪魔しないよう、下部の各セクショ
 - Width／Heightを直接編集できる。
 - Presetを追加、複製、削除、並べ替えできる。
 - Profileを追加、複製、削除、default変更できる。
-- Main 1～9とMore Portraitの区分が順番変更後も正しく更新される。
+- 全Presetの番号と表示順が順番変更後も正しく更新される。
 - 14件上限、1件未満禁止、重複禁止が分かりやすく表示される。
 
 ### 保存と復元
@@ -285,7 +284,7 @@ Profile Editor本体の操作を邪魔しないよう、下部の各セクショ
 
 - txt2img／img2imgのWidth／Heightが表示される。
 - 標準の縦横入れ替えボタンが動作する。
-- Main UIの通常表示高さが増えない。
+- メインUIは全Presetを同じ間隔で自然に折り返し、Preset間に別の操作欄や固定の空白を挟まない。
 - Settings以外の拡張のボタン幅・配色・レイアウトを変更しない。
 - ブラウザコンソールに本拡張固有のエラーがない。
 

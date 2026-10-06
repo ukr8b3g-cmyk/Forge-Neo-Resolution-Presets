@@ -18,10 +18,10 @@ UI rendering, preset selection, portrait/landscape color switching, and `Copy` h
 
 - Model-family profiles with one-click Width/Height presets.
 - The `SDXL` profile covers SDXL/Illustrious-style workflows and includes additional portrait presets.
-- The `Krea2` profile includes three square sizes and portrait presets, with two extra sizes under `More Portrait`.
+- The `Krea2` profile includes three square sizes and eight portrait presets, all visible together.
 - Shared user presets saved from the current Width/Height values.
 - Optional per-generation randomization from the current Profile's built-in presets.
-- Compact `More Portrait`, `Reset`, `Undo`, and `Copy` actions.
+- All built-in presets stay visible in one compact, naturally wrapping flow, followed by `Randomize`, `Reset`, `Undo`, `Copy`, and Profile controls.
 - Optional aspect-ratio calculator that preserves the current total pixel area.
 - Works independently in txt2img and img2img without recreating Forge Neo's native Width/Height controls.
 - No image processing, upscaling, checkpoint inspection, or generation-side processing.
@@ -32,17 +32,17 @@ The `Krea2` profile contains 11 presets in the following order. Landscape sizes 
 
 | Display | Width × Height | Aspect ratio / use |
 | --- | --- | --- |
-| Main 1 | 1024×1024 | Square, base size |
-| Main 2 | 1536×1536 | Square, intermediate comparison size |
-| Main 3 | 2048×2048 | Square, official Turbo example |
-| Main 4 | 928×1152 | Portrait, approximately 4:5 |
-| Main 5 | 896×1184 | Portrait, approximately 3:4 |
-| Main 6 | 832×1248 | Portrait, 2:3 |
-| Main 7 | 1024×1536 | Portrait, larger 2:3 |
-| Main 8 | 768×1376 | Portrait, approximately 9:16 |
-| Main 9 | 672×1568 | Portrait, rotated cinematic wide format |
-| More Portrait 1 | 864×1152 | Portrait, exact 3:4 |
-| More Portrait 2 | 720×1280 | Portrait, exact 9:16 |
+| Preset 1 | 1024×1024 | Square, base size |
+| Preset 2 | 1536×1536 | Square, intermediate comparison size |
+| Preset 3 | 2048×2048 | Square, official Turbo example |
+| Preset 4 | 928×1152 | Portrait, approximately 4:5 |
+| Preset 5 | 896×1184 | Portrait, approximately 3:4 |
+| Preset 6 | 832×1248 | Portrait, 2:3 |
+| Preset 7 | 1024×1536 | Portrait, larger 2:3 |
+| Preset 8 | 768×1376 | Portrait, approximately 9:16 |
+| Preset 9 | 672×1568 | Portrait, rotated cinematic wide format |
+| Preset 10 | 864×1152 | Portrait, exact 3:4 |
+| Preset 11 | 720×1280 | Portrait, exact 9:16 |
 
 The base portrait candidates follow [Krea2 Harness](https://github.com/ANe5s/ComfyUI-Krea2-Harness#krea2-resolution-selector), rotated where needed. [Krea 2's official Turbo usage example](https://github.com/krea-ai/krea-2#usage) uses 2048×2048; 1536×1536 is an optional intermediate comparison size. This Profile is a practical preset collection, not an official list of training resolutions.
 
@@ -80,7 +80,7 @@ The Advanced Ratio Calculator uses only rounding values compatible with the acti
 
 - `New profile` opens a name editor. `Duplicate profile` copies the selected Profile, while `Delete profile` removes it after confirmation. The last Profile cannot be deleted.
 - Edit `Width`/`Height` directly. Values must be integers between 16 and 16384, multiples of 8, and unique within a Profile.
-- Drag the ↕ handle to reorder rows. `Alt`+`↑`/`↓` also moves the focused row. The first 9 presets are `Main`; later entries are `More Portrait`.
+- Drag the ↕ handle to reorder rows. `Alt`+`↑`/`↓` also moves the focused row. All presets appear together in this order and wrap to fit the available width.
 - Row `Duplicate`/`Delete` affects a Preset only. Use the Profile toolbar for Profile-level operations.
 - `Save changes` validates the Draft, creates an automatic backup, and writes `data/profile_overrides.json`. Use `Reload UI` afterward to apply the saved Profile to txt2img/img2img.
 - `Restore built-in profiles` warns before discarding the Draft. An unsaved Draft is also protected by a warning when the UI or page is reloaded.
@@ -123,7 +123,7 @@ Paths are relative to the extension root (`Forge-Neo-Resolution-Presets/`):
 - A portrait preset is highlighted orange on exact match and blue with an outline when the current Width/Height is its landscape rotation; button labels and order stay fixed.
 - Clicking the matching built-in preset toggles its orientation: orange switches to the blue landscape rotation, and blue switches back to the portrait value.
 - Changing Profile changes the available built-in buttons but does not automatically change the current resolution.
-- `More Portrait` reveals the extra portrait presets without increasing the default height.
+- All built-in presets are always visible in one continuous wrapping row, in Profile order. Profile controls appear after the complete preset row.
 - `Randomize` changes to a highlighted state; while enabled, one preset from the current Profile is selected for each generation. User presets are excluded by default; enable `Include custom presets` in the Settings tab to include them. Click `Randomize` again to disable it.
 - `Reset` applies `1024x1024` (the first preset in the shipped Profiles). `Undo` restores the resolution before the last preset/reset action. `Copy` copies the current Width×Height text.
 - Built-in presets contain square and portrait dimensions only. Use Forge Neo's native Width/Height swap control for landscape orientation.

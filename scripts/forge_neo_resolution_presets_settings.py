@@ -267,7 +267,7 @@ SETTINGS_MARKUP = r"""
       <button type="button" data-action="set-default">Make default</button>
     </div>
     <div class="fnp-settings-helper">Edit Width / Height directly. Drag ↕ to reorder. Changes apply after Save changes.</div>
-    <div class="fnp-settings-helper">First 9 presets appear in Main row; the rest appear in More Portrait. Alt+↑／↓ also moves a focused row.</div>
+    <div class="fnp-settings-helper">All presets appear together in this order and wrap to fit the available width. Alt+↑／↓ also moves a focused row.</div>
     <div class="fnp-settings-column-head" aria-hidden="true"><span>Width × Height</span><span>Actions</span></div>
     <div id="fnp-settings-presets"></div>
     <div class="fnp-settings-profile-actions">
