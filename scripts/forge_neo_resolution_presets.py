@@ -5,7 +5,6 @@ import json
 import math
 import os
 import random
-import shutil
 import tempfile
 import threading
 from datetime import datetime
@@ -23,8 +22,6 @@ BASE_PATH = Path(scripts.basedir())
 PROFILES_PATH = BASE_PATH / "profiles.json"
 DATA_PATH = BASE_PATH / "data"
 USER_PRESETS_PATH = DATA_PATH / "user_presets.json"
-BACKUP_PATH = DATA_PATH / "backups"
-EXPORT_PATH = DATA_PATH / "user_presets-export.json"
 LAST_PROFILES_PATH = DATA_PATH / "last_profiles.json"
 PROFILE_OVERRIDES_PATH = DATA_PATH / "profile_overrides.json"
 BEHAVIOR_SETTINGS_PATH = DATA_PATH / "behavior_settings.json"
@@ -38,7 +35,6 @@ MAX_DIMENSION = 16384
 DEFAULT_ROUNDING = 8
 SUPPORTED_RESOLUTION_STEPS = (8, 16, 32, 64, 128, 256)
 MAX_HISTORY = 12
-MAX_IMPORT_BYTES = 5 * 1024 * 1024
 HISTORY_LOCK = threading.Lock()
 
 
@@ -326,28 +322,6 @@ def _load_user_presets() -> list[dict[str, Any]]:
         return []
 
 
-def _write_user_presets(presets: list[dict[str, Any]]) -> None:
-    DATA_PATH.mkdir(parents=True, exist_ok=True)
-    if USER_PRESETS_PATH.exists():
-        BACKUP_PATH.mkdir(parents=True, exist_ok=True)
-        stamp = datetime.now().strftime("%Y%m%d-%H%M%S-%f")
-        backup = BACKUP_PATH / f"user_presets-{stamp}.json"
-        shutil.copy2(USER_PRESETS_PATH, backup)
-        backups = sorted(BACKUP_PATH.glob("user_presets-*.json"), key=lambda p: p.stat().st_mtime, reverse=True)
-        for old in backups[10:]:
-            old.unlink(missing_ok=True)
-
-    fd, temp_name = tempfile.mkstemp(prefix="user_presets-", suffix=".tmp", dir=str(DATA_PATH))
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8", newline="\n") as handle:
-            json.dump({"version": 1, "presets": presets}, handle, ensure_ascii=False, indent=2)
-            handle.write("\n")
-        os.replace(temp_name, USER_PRESETS_PATH)
-    finally:
-        if os.path.exists(temp_name):
-            os.unlink(temp_name)
-
-
 def _parse_ratio(value: Any) -> Fraction:
     text = str(value or "").strip().replace(" ", "")
     if not text:
@@ -469,62 +443,6 @@ def _button_update(
     return gr.update(**kwargs)
 
 
-def _refresh_user_controls(
-    user_count: Any,
-    user_buttons: list[Any],
-    user_rows: list[Any],
-    user_labels: list[Any],
-    delete_buttons: list[Any],
-    status: Any | None = None,
-    name_input: Any | None = None,
-    message: str = "",
-    current_width: Any | None = None,
-    current_height: Any | None = None,
-    overwrite_button: Any | None = None,
-    show_overwrite: bool = False,
-    clear_name: bool = True,
-    native_constraints: tuple[int, int, int] | None = None,
-) -> list[Any]:
-    presets = _load_user_presets()
-    outputs: list[Any] = [gr.update(value=f"User ({len(presets)})")]
-
-    for index in range(MAX_USER_PRESETS):
-        if index < len(presets):
-            preset = presets[index]
-            exact = _exact_preset(preset["width"], preset["height"], *(native_constraints or _native_constraints())[:2])
-            variant = "primary" if _same_resolution(
-                *(exact or (None, None)), current_width, current_height
-            ) else "secondary"
-            label = preset["name"]
-            outputs.append(_button_update(label, variant=variant, interactive=exact is not None))
-            outputs.append(gr.update(visible=True))
-            outputs.append(gr.update(value=f"{preset['name']}  {preset['width']}×{preset['height']}"))
-            outputs.append(_button_update("Delete"))
-        else:
-            outputs.append(_button_update("", visible=False))
-            outputs.append(gr.update(visible=False))
-            outputs.append(gr.update(value=""))
-            outputs.append(_button_update("Delete", visible=False))
-
-    if status is not None:
-        outputs.append(message)
-    if name_input is not None:
-        outputs.append(gr.update(value="") if clear_name else gr.update())
-    if overwrite_button is not None:
-        outputs.append(gr.update(visible=show_overwrite))
-    return outputs
-
-
-def _export_user_presets() -> tuple[Any, str]:
-    presets = _load_user_presets()
-    DATA_PATH.mkdir(parents=True, exist_ok=True)
-    EXPORT_PATH.write_text(
-        json.dumps({"version": 1, "presets": presets}, ensure_ascii=False, indent=2) + "\n",
-        encoding="utf-8",
-    )
-    return gr.update(value=str(EXPORT_PATH), visible=True), f"書き出しました（{len(presets)}件）"
-
-
 class ForgeNeoResolutionPresets(scripts.Script):
     sorting_priority = -100
 
@@ -599,11 +517,6 @@ class ForgeNeoResolutionPresets(scripts.Script):
 
         def exact_preset(width, height):
             return _exact_preset(width, height, native_minimum, native_maximum)
-
-        def refresh_user_controls(*args, **kwargs):
-            return _refresh_user_controls(
-                *args, **kwargs, native_constraints=(native_minimum, native_maximum, native_step)
-            )
 
         selected_profile = _load_last_profile(tab_key, profile_names, default_profile)
         randomize_default = _load_behavior_settings()["randomize_default"]
@@ -700,7 +613,7 @@ class ForgeNeoResolutionPresets(scripts.Script):
                 )
 
             with gr.Row(elem_classes=["fnp__user_row"]):
-                user_count = gr.Markdown(f"User ({len(initial_user_presets)})", elem_classes=["fnp__user_count"])
+                gr.Markdown(f"User ({len(initial_user_presets)})", elem_classes=["fnp__user_count"])
                 user_buttons: list[Any] = []
                 for index in range(MAX_USER_PRESETS):
                     initial_user = initial_user_presets[index] if index < len(initial_user_presets) else None
@@ -728,64 +641,6 @@ class ForgeNeoResolutionPresets(scripts.Script):
                     _current_info(initial_width, initial_height),
                     elem_classes=["fnp__current_info"],
                 )
-                manage_button = gr.Button("Manage", elem_classes=["fnp__manage_button"])
-
-            manage_open = gr.State(False)
-
-            with gr.Column(visible=False, elem_classes=["fnp__manage_panel"]) as manage_panel:
-                gr.Markdown(
-                    "Save the current Width / Height with a name. Click a saved preset to load it.",
-                    elem_classes=["fnp__manage_hint"],
-                )
-                with gr.Row(elem_classes=["fnp__manage_form"]):
-                    name_input = gr.Textbox(
-                        label="",
-                        placeholder="Preset name",
-                        show_label=False,
-                        container=False,
-                        max_lines=1,
-                        elem_classes=["fnp__name_input"],
-                    )
-                    save_button = gr.Button("Save current", size="sm", elem_classes=["fnp__save_button"])
-                    overwrite_button = gr.Button(
-                        "Update",
-                        size="sm",
-                        visible=False,
-                        elem_classes=["fnp__overwrite_button"],
-                    )
-                manage_status = gr.Markdown("", elem_classes=["fnp__status"])
-                with gr.Row(elem_classes=["fnp__transfer_row"]):
-                    export_button = gr.Button("Export", size="sm", elem_classes=["fnp__export_button"])
-                    import_file = gr.UploadButton(
-                        "Choose JSON",
-                        size="sm",
-                        file_count="single",
-                        file_types=[".json"],
-                        type="filepath",
-                        elem_classes=["fnp__import_file"],
-                    )
-                    import_button = gr.Button("Import", size="sm", elem_classes=["fnp__import_button"])
-                    merge_button = gr.Button("Merge", size="sm", elem_classes=["fnp__merge_button"])
-                export_file = gr.File(
-                    label="",
-                    show_label=False,
-                    interactive=False,
-                    visible=False,
-                    elem_classes=["fnp__export_file"],
-                )
-                manage_rows: list[Any] = []
-                manage_labels: list[Any] = []
-                delete_buttons: list[Any] = []
-                for index in range(MAX_USER_PRESETS):
-                    has_preset = index < len(initial_user_presets)
-                    with gr.Row(visible=has_preset, elem_classes=["fnp__manage_row"]) as manage_row:
-                        initial_text = ""
-                        if has_preset:
-                            preset = initial_user_presets[index]
-                            initial_text = f"{preset['name']}  {preset['width']}×{preset['height']}"
-                        manage_labels.append(gr.Markdown(initial_text, elem_classes=["fnp__manage_label"]))
-                        delete_buttons.append(gr.Button("Delete", elem_classes=["fnp__delete_button"]))
-                    manage_rows.append(manage_row)
 
             quick_ratio_buttons: list[Any] = []
             with gr.Accordion(
@@ -1004,275 +859,6 @@ class ForgeNeoResolutionPresets(scripts.Script):
             outputs=[],
             js_code="(width, height) => { navigator.clipboard?.writeText(`${width}×${height}`); }",
         )
-
-        user_outputs: list[Any] = [user_count]
-        for index in range(MAX_USER_PRESETS):
-            user_outputs.extend([user_buttons[index], manage_rows[index], manage_labels[index], delete_buttons[index]])
-
-        def toggle_manage(is_open):
-            next_open = not bool(is_open)
-            return (
-                gr.update(visible=next_open),
-                gr.update(value="Close" if next_open else "Manage"),
-                next_open,
-            )
-
-        manage_button.click(
-            toggle_manage,
-            inputs=[manage_open],
-            outputs=[manage_panel, manage_button, manage_open],
-            show_progress="hidden",
-        )
-
-        save_outputs = user_outputs + [manage_status, name_input, overwrite_button]
-
-        def save_current(name, width, height):
-            try:
-                cleaned = str(name or "").strip()[:MAX_NAME_LENGTH]
-                if not cleaned:
-                    raise ValueError("プリセット名を入力してください")
-                if cleaned.startswith("{'value':") or cleaned.startswith('{"value"'):
-                    raise ValueError("無効なプリセット名です")
-                if not _is_dimension(int(width)) or not _is_dimension(int(height)):
-                    raise ValueError("現在のWidth／Heightが不正です")
-                presets = _load_user_presets()
-                if any(preset["name"].casefold() == cleaned.casefold() for preset in presets):
-                    return refresh_user_controls(
-                        user_count,
-                        user_buttons,
-                        manage_rows,
-                        manage_labels,
-                        delete_buttons,
-                        manage_status,
-                        name_input,
-                        "同名のプリセットがあります。Updateで上書きできます。",
-                        current_width=width,
-                        current_height=height,
-                        overwrite_button=overwrite_button,
-                        show_overwrite=True,
-                        clear_name=False,
-                    )
-                if len(presets) >= MAX_USER_PRESETS:
-                    raise ValueError(f"保存できるユーザープリセットは{MAX_USER_PRESETS}件までです")
-                presets.append({"name": cleaned, "width": int(width), "height": int(height)})
-                _write_user_presets(presets)
-                return refresh_user_controls(
-                    user_count,
-                    user_buttons,
-                    manage_rows,
-                    manage_labels,
-                    delete_buttons,
-                    manage_status,
-                    name_input,
-                    "保存しました",
-                    current_width=width,
-                    current_height=height,
-                    overwrite_button=overwrite_button,
-                )
-            except (OSError, ValueError, TypeError) as exc:
-                return refresh_user_controls(
-                    user_count,
-                    user_buttons,
-                    manage_rows,
-                    manage_labels,
-                    delete_buttons,
-                    manage_status,
-                    name_input,
-                    f"保存できません: {exc}",
-                    current_width=width,
-                    current_height=height,
-                    overwrite_button=overwrite_button,
-                )
-
-        save_button.click(
-            save_current,
-            inputs=[name_input, width_component, height_component],
-            outputs=save_outputs,
-            show_progress="hidden",
-        )
-
-        def overwrite_current(name, width, height):
-            try:
-                cleaned = str(name or "").strip()[:MAX_NAME_LENGTH]
-                if not cleaned:
-                    raise ValueError("プリセット名を入力してください")
-                if not _is_dimension(int(width)) or not _is_dimension(int(height)):
-                    raise ValueError("現在のWidth／Heightが不正です")
-                presets = _load_user_presets()
-                match = next(
-                    (index for index, preset in enumerate(presets)
-                     if preset["name"].casefold() == cleaned.casefold()),
-                    None,
-                )
-                if match is None:
-                    raise ValueError("対象のプリセットが見つかりません")
-                presets[match] = {
-                    "name": presets[match]["name"],
-                    "width": int(width),
-                    "height": int(height),
-                }
-                _write_user_presets(presets)
-                return refresh_user_controls(
-                    user_count,
-                    user_buttons,
-                    manage_rows,
-                    manage_labels,
-                    delete_buttons,
-                    manage_status,
-                    name_input,
-                    "更新しました",
-                    current_width=width,
-                    current_height=height,
-                    overwrite_button=overwrite_button,
-                )
-            except (OSError, ValueError, TypeError) as exc:
-                return refresh_user_controls(
-                    user_count,
-                    user_buttons,
-                    manage_rows,
-                    manage_labels,
-                    delete_buttons,
-                    manage_status,
-                    name_input,
-                    f"更新できません: {exc}",
-                    current_width=width,
-                    current_height=height,
-                    overwrite_button=overwrite_button,
-                    show_overwrite=True,
-                    clear_name=False,
-                )
-
-        overwrite_button.click(
-            overwrite_current,
-            inputs=[name_input, width_component, height_component],
-            outputs=save_outputs,
-            show_progress="hidden",
-        )
-
-        def import_user_presets(source_path, current_width, current_height, merge=False):
-            try:
-                if not source_path:
-                    raise ValueError("JSONファイルを選択してください")
-                source = Path(str(source_path))
-                if source.suffix.lower() != ".json":
-                    raise ValueError("JSONファイルを選択してください")
-                if source.stat().st_size > MAX_IMPORT_BYTES:
-                    raise ValueError("JSONファイルは5 MiB以下にしてください")
-                imported = _normalise_user_presets(json.loads(source.read_text(encoding="utf-8")))
-                unique: list[dict[str, Any]] = []
-                names: set[str] = set()
-                for preset in imported:
-                    key = preset["name"].casefold()
-                    if key not in names:
-                        names.add(key)
-                        unique.append(preset)
-                if not unique:
-                    raise ValueError("有効なプリセットがありません")
-                if merge:
-                    presets = _load_user_presets()
-                    positions = {preset["name"].casefold(): index for index, preset in enumerate(presets)}
-                    for preset in unique:
-                        key = preset["name"].casefold()
-                        if key in positions:
-                            presets[positions[key]] = preset
-                        elif len(presets) < MAX_USER_PRESETS:
-                            positions[key] = len(presets)
-                            presets.append(preset)
-                    result_count = len(presets)
-                else:
-                    presets = unique[:MAX_USER_PRESETS]
-                    result_count = len(presets)
-                _write_user_presets(presets)
-                return refresh_user_controls(
-                    user_count,
-                    user_buttons,
-                    manage_rows,
-                    manage_labels,
-                    delete_buttons,
-                    manage_status,
-                    None,
-                    f"{'Mergeしました' if merge else '読み込みました'}（{result_count}件）",
-                    current_width=current_width,
-                    current_height=current_height,
-                )
-            except (OSError, ValueError, TypeError, json.JSONDecodeError) as exc:
-                return refresh_user_controls(
-                    user_count,
-                    user_buttons,
-                    manage_rows,
-                    manage_labels,
-                    delete_buttons,
-                    manage_status,
-                    None,
-                    f"読み込めません: {exc}",
-                    current_width=current_width,
-                    current_height=current_height,
-                )
-
-        export_button.click(
-            _export_user_presets,
-            inputs=None,
-            outputs=[export_file, manage_status],
-            show_progress="hidden",
-        )
-        import_button.click(
-            lambda source_path, current_width, current_height: import_user_presets(
-                source_path, current_width, current_height, False
-            ),
-            inputs=[import_file, width_component, height_component],
-            outputs=user_outputs + [manage_status],
-            show_progress="hidden",
-        )
-        merge_button.click(
-            lambda source_path, current_width, current_height: import_user_presets(
-                source_path, current_width, current_height, True
-            ),
-            inputs=[import_file, width_component, height_component],
-            outputs=user_outputs + [manage_status],
-            show_progress="hidden",
-        )
-
-        for index, delete_button in enumerate(delete_buttons):
-            def delete_current(current_width, current_height, index=index):
-                presets = _load_user_presets()
-                if index >= len(presets):
-                    return refresh_user_controls(
-                        user_count,
-                        user_buttons,
-                        manage_rows,
-                        manage_labels,
-                        delete_buttons,
-                        manage_status,
-                        None,
-                        "",
-                        current_width=current_width,
-                        current_height=current_height,
-                    )
-                del presets[index]
-                try:
-                    _write_user_presets(presets)
-                    message = "削除しました"
-                except OSError as exc:
-                    message = f"削除できません: {exc}"
-                return refresh_user_controls(
-                    user_count,
-                    user_buttons,
-                    manage_rows,
-                    manage_labels,
-                    delete_buttons,
-                    manage_status,
-                    None,
-                    message,
-                    current_width=current_width,
-                    current_height=current_height,
-                )
-
-            delete_button.click(
-                delete_current,
-                inputs=[width_component, height_component],
-                outputs=user_outputs + [manage_status],
-                show_progress="hidden",
-            )
 
         ratio_inputs = [width_component, height_component, aspect_ratio, rounding]
 

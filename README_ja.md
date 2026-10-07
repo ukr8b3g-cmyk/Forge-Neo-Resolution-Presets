@@ -20,7 +20,7 @@ Forge Neo／reForgeのtxt2img・img2img向け、コンパクトな解像度プ�
 - モデル系統別Profileの推奨解像度をワンクリック適用
 - `SDXL` ProfileはSDXL／Illustrious系の用途を想定し、縦長プリセットを追加収録
 - `Krea2` Profileは正方形3件と縦長8件を収録し、すべてまとめて表示
-- 現在のWidth／Heightをユーザープリセットとして保存
+- 保存済みの名前付きユーザープリセットを両タブで読み込み。Profileと解像度の編集はSettingsで操作
 - 現在のProfileの固定プリセットから、生成ごとにランダム適用
 - 全プリセットを常時表示し、横幅に合わせて自然に折り返し。その後に`Randomize`、`Reset`、`Undo`、`Copy`、Profile操作をコンパクトに配置
 - 現在の総画素数を維持する任意アスペクト比計算
@@ -100,7 +100,7 @@ Advanced Ratio Calculatorは現在のResolution Stepと互換する丸め幅だ�
 
 履歴パネルには、最近の解像度変更を解像度、Profile、タブ、日時とともに表示します。Width／Heightを直接操作した場合はスライダーを離した時点、Preset／Reset／Undo／Ratio Applyは最終解像度を1回だけ記録します。`Clear history`でローカルの履歴ファイル（`data/resolution_history.json`）を削除できます。
 
-ユーザープリセットは実行時に`data/user_presets.json`へ保存されます。保存・削除の前に、既存ファイルは`data/backups/`へバックアップされます。
+保存済みの名前付きユーザープリセットは`data/user_presets.json`から読み込みます。拡張機能を更新しても、このファイルと既存のバックアップは保持されます。
 
 ## ファイルの保存場所
 
@@ -109,8 +109,8 @@ Advanced Ratio Calculatorは現在のResolution Stepと互換する丸め幅だ�
 - 既存のモデルProfile／固定プリセット：`profiles.json`
 - ユーザープリセット：`data/user_presets.json`
 - タブごとの最後のProfile：`data/last_profiles.json`
-- エクスポート一時ファイル：`data/user_presets-export.json`
-- ユーザープリセットのバックアップ：`data/backups/`
+- 旧バージョンのユーザープリセット書き出し（存在する場合）：`data/user_presets-export.json`
+- 既存のユーザープリセットのバックアップ：`data/backups/`
 - Settingsで編集したProfile：`data/profile_overrides.json`
 - Profileのバックアップ：`data/profile_backups/`
 - Randomize設定：`data/behavior_settings.json`
@@ -132,15 +132,11 @@ Advanced Ratio Calculatorは現在のResolution Stepと互換する丸め幅だ�
 
 ## ユーザープリセットの使い方
 
-`Manage`を押すと管理欄が開き、もう一度押すと閉じます。
+`User`行に表示された名前のボタンを押すと、保存済みのプリセットを現在のタブへ読み込みます。既存の`data/user_presets.json`は引き続き利用でき、Settingsの`Include custom presets`が有効ならRandomizeの候補にも含まれます。
 
-1. 名前を入力して`Save current`を押すと、現在のWidth／Heightを保存します。
-2. `User`行に表示された名前のボタンを押すと、現在のタブへ読み込みます。
-3. `Manage`を開き、対象行の`Delete`を押すと削除します。
-4. 同名がある場合は`Update`を押すと、現在のWidth／Heightで上書きします。
-5. `Export`でJSONを書き出し、`Import JSON`で選択して`Import`を押すとUserプリセットを置き換えます。`Merge`は現在の一覧を残し、同名だけインポート側で更新します。Import前にもバックアップを作成します。
+生成タブ内の`Manage`管理欄と、保存・更新・削除・Import・Merge・Exportの操作は廃止しました。Profileの解像度を追加・編集する場合は、`Settings` → `Extensions` → `Resolution Presets`で編集し、`Save changes`の後に`Reload UI`を実行してください。Profile Editorの編集対象は`data/profile_overrides.json`で、従来の名前付きユーザープリセットのファイルは編集しません。
 
-ユーザープリセットと最後に選択したProfileはローカルファイルだけに保存されます。GitHubやクラウドへアップロードされず、別のForge Neo環境とも同期されません。プリセットを残したい場合は、このファイルや`data`フォルダを削除しないでください。保存・更新・削除・Importの前には、`data/backups/`へ日時付きバックアップを作成します。
+ユーザープリセットと最後に選択したProfileはローカルファイルだけに保存されます。GitHubやクラウドへアップロードされず、別のForge Neo環境とも同期されません。保存済みプリセットやバックアップを残したい場合は、`data/user_presets.json`や既存の`data/backups/`を削除しないでください。
 
 ## Advanced Ratio Calculatorの役割
 

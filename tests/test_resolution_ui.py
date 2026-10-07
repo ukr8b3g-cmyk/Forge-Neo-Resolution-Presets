@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import unittest
 import types
+import tempfile
+from pathlib import Path
 from unittest.mock import patch
 
 from test_resolution_helpers import load_extension_module
@@ -66,6 +68,7 @@ class ResolutionUITests(unittest.TestCase):
     def setUp(self):
         Component.context_stack.clear()
         self.mod = load_extension_module()
+        self.load_user_presets = self.mod._load_user_presets
         self.components = []
         for name in ("Accordion", "Button", "Column", "Dropdown", "File", "HTML", "Markdown", "Row", "State", "Textbox", "UploadButton"):
             def factory(*args, kind=name, **kwargs):
@@ -228,23 +231,84 @@ class ResolutionUITests(unittest.TestCase):
             self.script.before_process(process, *(component.value for component in self.script_args))
         self.assertEqual((process.width, process.height), (720, 1280))
 
-    def test_user_preset_click_and_management_refresh_keep_exact_values(self):
+    def test_user_preset_click_and_refresh_keep_exact_values_on_both_tabs(self):
         custom = [{"name": "Portrait", "width": 720, "height": 1280}]
         with patch.object(self.mod, "_load_user_presets", return_value=custom):
-            self.build_ui()
-            button = self.by_class("fnp__user_button")[0]
-            self.assertEqual(button.value, "Portrait")
-            self.assertTrue(button.interactive)
-            button.trigger("click")
-            self.assertEqual((self.width.value, self.height.value), (720, 1280))
-            self.assertEqual(button.variant, "primary")
-            self.width.trigger("change")
-            self.assertEqual(button.value, "Portrait")
-            # Management refreshes must preserve the name and exact dimensions.
-            updates = self.mod._refresh_user_controls(None, [], [], [], [], current_width=720, current_height=1280, native_constraints=(64, 2048, 64))
-            self.assertEqual(updates[1]["value"], button.value)
-            self.assertTrue(updates[1]["interactive"])
-            self.assertEqual(updates[1]["variant"], "primary")
+            for tab in (False, True):
+                with self.subTest(img2img=tab):
+                    self.build_ui(tab)
+                    self.assertEqual(self.by_class("fnp__user_count")[0].value, "User (1)")
+                    button = self.by_class("fnp__user_button")[0]
+                    self.assertEqual(button.value, "Portrait")
+                    self.assertTrue(button.interactive)
+                    for _ in range(2):
+                        button.trigger("click")
+                        self.assertEqual((self.width.value, self.height.value), (720, 1280))
+                        self.width.trigger("change")
+                        self.height.trigger("change")
+                        self.assertEqual(button.value, "Portrait")
+                        self.assertEqual(button.variant, "primary")
+                    self.by_class("fnp__reset_button")[0].trigger("click")
+                    self.by_class("fnp__undo_button")[0].trigger("click")
+                    self.assertEqual((self.width.value, self.height.value), (720, 1280))
+
+    def test_inline_management_is_absent_for_all_profiles_on_both_tabs(self):
+        removed_classes = (
+            "manage_button", "manage_panel", "manage_hint", "manage_form",
+            "name_input", "save_button", "overwrite_button", "status",
+            "transfer_row", "export_button", "import_file", "import_button",
+            "merge_button", "export_file", "manage_row", "manage_label", "delete_button",
+        )
+        for tab in (False, True):
+            for selected in self.profiles:
+                with self.subTest(img2img=tab, profile=selected):
+                    self.build_ui(tab, selected_profile=selected)
+                    for name in removed_classes:
+                        self.assertFalse(self.by_class("fnp__" + name), name)
+                    self.assertFalse([component for component in self.components if component.kind in ("File", "UploadButton")])
+                    for name in ("randomize_button", "reset_button", "undo_button", "copy_button", "profile", "ratio_accordion"):
+                        self.assertEqual(len(self.by_class("fnp__" + name)), 1, name)
+                    self.assert_unified_preset_row(selected)
+
+    def test_existing_user_file_is_loaded_without_being_modified(self):
+        data = b'{"version": 1, "presets": [{"name": "Saved portrait", "width": 720, "height": 1280}]}\n'
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "user_presets.json"
+            path.write_bytes(data)
+            with patch.object(self.mod, "USER_PRESETS_PATH", path), patch.object(self.mod, "_load_user_presets", side_effect=self.load_user_presets):
+                for tab in (False, True):
+                    self.build_ui(tab)
+                    button = self.by_class("fnp__user_button")[0]
+                    self.assertEqual(button.value, "Saved portrait")
+                    button.trigger("click")
+                    self.width.trigger("change")
+                    self.assertEqual((self.width.value, self.height.value), (720, 1280))
+                    self.assertEqual(path.read_bytes(), data)
+
+    def test_retained_randomize_copy_and_ratio_controls_on_both_tabs(self):
+        for tab in (False, True):
+            with self.subTest(img2img=tab):
+                self.build_ui(tab)
+                randomize = self.by_class("fnp__randomize_button")[0]
+                for enabled in (True, False, True):
+                    randomize.trigger("click")
+                    self.assertEqual(self.script_args[0].value, enabled)
+                    self.assertEqual(randomize.variant, "primary" if enabled else "secondary")
+                fn, copy_options = self.by_class("fnp__copy_button")[0].events["click"][0]
+                self.assertIsNone(fn)
+                self.assertEqual(copy_options["inputs"], [self.width, self.height])
+                self.assertIn("clipboard", copy_options["js"])
+                self.assertFalse(self.by_class("fnp__ratio_accordion")[0].open)
+                quick = self.by_class("fnp__ratio_quick_button")[1]
+                quick.trigger("click")
+                self.assertEqual(self.by_class("fnp__ratio_input")[0].value, "4:5")
+                self.assertEqual((self.width.value, self.height.value), (1024, 1024))
+                expected = self.mod._calculate_dimensions(1024, 1024, "4:5", 64, 64, 2048)
+                self.by_class("fnp__apply_button")[0].trigger("click")
+                self.assertEqual((self.width.value, self.height.value), expected)
+                self.by_class("fnp__ratio_input")[0].value = "invalid"
+                self.by_class("fnp__apply_button")[0].trigger("click")
+                self.assertEqual((self.width.value, self.height.value), expected)
 
     def test_reset_keeps_exact_first_preset_and_out_of_range_click_does_nothing(self):
         self.profiles["Krea2"] = [(928, 1152), (4096, 4096)]

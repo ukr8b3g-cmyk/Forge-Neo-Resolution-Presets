@@ -135,12 +135,6 @@
 #fnp__img2img_container .fnp__undo_button,
 #fnp__txt2img_container .fnp__copy_button,
 #fnp__img2img_container .fnp__copy_button,
-#fnp__txt2img_container .fnp__manage_button,
-#fnp__img2img_container .fnp__manage_button,
-#fnp__txt2img_container .fnp__save_button,
-#fnp__img2img_container .fnp__save_button,
-#fnp__txt2img_container .fnp__delete_button,
-#fnp__img2img_container .fnp__delete_button,
 #fnp__txt2img_container .fnp__apply_button,
 #fnp__img2img_container .fnp__apply_button {
     width: auto !important;
@@ -229,72 +223,6 @@
     text-overflow: ellipsis !important;
 }
 
-#fnp__txt2img_container .fnp__manage_button,
-#fnp__img2img_container .fnp__manage_button {
-    margin-left: auto !important;
-}
-
-#fnp__txt2img_container .fnp__manage_panel,
-#fnp__img2img_container .fnp__manage_panel {
-    gap: 4px !important;
-    margin: 0 !important;
-    padding: 5px 6px !important;
-    border-top: 1px solid var(--border-color-primary) !important;
-}
-
-#fnp__txt2img_container .fnp__manage_hint,
-#fnp__img2img_container .fnp__manage_hint {
-    margin: 0 !important;
-    padding: 0 !important;
-    color: var(--body-text-color-subdued) !important;
-    font-size: 0.8em !important;
-}
-
-#fnp__txt2img_container .fnp__manage_form,
-#fnp__img2img_container .fnp__manage_form,
-#fnp__txt2img_container .fnp__manage_row,
-#fnp__img2img_container .fnp__manage_row {
-    align-items: center;
-    gap: 6px !important;
-}
-
-#fnp__txt2img_container .fnp__name_input,
-#fnp__img2img_container .fnp__name_input {
-    flex: 1 1 240px !important;
-    width: auto !important;
-    min-width: 200px !important;
-}
-
-#fnp__txt2img_container .fnp__save_button,
-#fnp__img2img_container .fnp__save_button {
-    flex: 0 0 auto !important;
-    width: auto !important;
-}
-
-#fnp__txt2img_container .fnp__overwrite_button,
-#fnp__img2img_container .fnp__overwrite_button,
-#fnp__txt2img_container .fnp__export_button,
-#fnp__img2img_container .fnp__export_button,
-#fnp__txt2img_container .fnp__import_button,
-#fnp__img2img_container .fnp__import_button,
-#fnp__txt2img_container .fnp__merge_button,
-#fnp__img2img_container .fnp__merge_button {
-    flex: 0 0 auto !important;
-    width: auto !important;
-    padding: 4px 8px !important;
-}
-
-#fnp__txt2img_container .fnp__manage_label,
-#fnp__img2img_container .fnp__manage_label {
-    flex: 1 1 auto !important;
-    min-width: 0 !important;
-    margin: 0 !important;
-    padding: 0 !important;
-    font-size: 0.85em !important;
-}
-
-#fnp__txt2img_container .fnp__transfer_row,
-#fnp__img2img_container .fnp__transfer_row,
 #fnp__txt2img_container .fnp__ratio_quick_row,
 #fnp__img2img_container .fnp__ratio_quick_row {
     align-items: center;
@@ -302,25 +230,9 @@
     flex-wrap: nowrap !important;
 }
 
-#fnp__txt2img_container .fnp__transfer_row > *,
-#fnp__img2img_container .fnp__transfer_row > *,
 #fnp__txt2img_container .fnp__ratio_quick_row > *,
 #fnp__img2img_container .fnp__ratio_quick_row > * {
     flex: 0 0 auto !important;
-}
-
-#fnp__txt2img_container .fnp__import_file,
-#fnp__img2img_container .fnp__import_file {
-    flex: 0 0 auto !important;
-    width: 132px !important;
-    min-width: 132px !important;
-}
-
-#fnp__txt2img_container .fnp__export_file,
-#fnp__img2img_container .fnp__export_file {
-    margin: 2px 0 0 !important;
-    padding: 0 !important;
-    font-size: 0.8em !important;
 }
 
 #fnp__txt2img_container .fnp__ratio_quick_label,
@@ -340,13 +252,6 @@
     min-width: 44px !important;
     padding: 4px 6px !important;
     white-space: nowrap !important;
-}
-
-#fnp__txt2img_container .fnp__status,
-#fnp__img2img_container .fnp__status {
-    margin: 0 !important;
-    padding: 0 !important;
-    font-size: 0.8em !important;
 }
 
 #fnp__txt2img_container .fnp__ratio_accordion,

@@ -19,7 +19,7 @@ UI rendering, preset selection, portrait/landscape color switching, and `Copy` h
 - Model-family profiles with one-click Width/Height presets.
 - The `SDXL` profile covers SDXL/Illustrious-style workflows and includes additional portrait presets.
 - The `Krea2` profile includes three square sizes and eight portrait presets, all visible together.
-- Shared user presets saved from the current Width/Height values.
+- Load existing named user presets in either generation tab. Edit Profiles and their resolutions in Settings.
 - Optional per-generation randomization from the current Profile's built-in presets.
 - All built-in presets stay visible in one compact, naturally wrapping flow, followed by `Randomize`, `Reset`, `Undo`, `Copy`, and Profile controls.
 - Optional aspect-ratio calculator that preserves the current total pixel area.
@@ -99,7 +99,7 @@ The Advanced Ratio Calculator uses only rounding values compatible with the acti
 
 The history panel records recent resolution changes with the resolution, Profile, tab, and timestamp. Direct Width/Height edits are recorded when the slider is released; preset, Reset, Undo, and Ratio Apply actions record their final resolution once. `Clear history` removes the local history file (`data/resolution_history.json`).
 
-User presets are stored at runtime in `data/user_presets.json`. Existing files are backed up in `data/backups/` before each save or delete operation.
+Existing named user presets are read from `data/user_presets.json`. This file and its existing backups are preserved when updating the extension.
 
 ## File locations
 
@@ -109,8 +109,8 @@ Paths are relative to the extension root (`Forge-Neo-Resolution-Presets/`):
 - User presets: `data/user_presets.json`
 
 - Last selected Profile per tab: `data/last_profiles.json`
-- Export file: `data/user_presets-export.json`
-- User-preset backups: `data/backups/`
+- Legacy user-preset export, if present: `data/user_presets-export.json`
+- Existing user-preset backups: `data/backups/`
 - Edited profile override: `data/profile_overrides.json`
 - Profile backups: `data/profile_backups/`
 - Randomize settings: `data/behavior_settings.json`
@@ -132,15 +132,11 @@ Paths are relative to the extension root (`Forge-Neo-Resolution-Presets/`):
 
 ## User presets
 
-`Manage` toggles the management area open and closed.
+Click a named button in the `User` row to load an existing preset into the active tab. Existing `data/user_presets.json` files remain compatible, and saved presets can still participate in Randomize when `Include custom presets` is enabled in Settings.
 
-1. Enter a name and click `Save current` to save the current native Width/Height.
-2. Click a named button in the `User` row to load that preset into the active tab.
-3. Open `Manage` and click `Delete` to remove a saved preset.
-4. If the name already exists, click `Update` to overwrite that preset with the current Width/Height.
-5. Click `Export` to create a JSON file. Choose a file with `Import JSON`, then click `Import` to replace the current user presets, or `Merge` to keep the current list and update matching names from the imported file. A backup is created before import.
+The generation tabs no longer include the inline `Manage` panel or its save, update, delete, import, merge, and export controls. To add or edit Profile resolutions, use `Settings` → `Extensions` → `Resolution Presets`, then `Save changes` and `Reload UI`. The Profile Editor manages `data/profile_overrides.json`; it does not edit the legacy named-user-preset file.
 
-User presets and the remembered Profile are local files only. They are not uploaded, synchronized with GitHub, or shared with another Forge Neo installation. Do not delete `data/user_presets.json` if you want to keep them. A timestamped backup is created in `data/backups/` before each save, update, delete, or import operation.
+User presets and the remembered Profile are local files only. They are not uploaded, synchronized with GitHub, or shared with another Forge Neo installation. Keep `data/user_presets.json` and any existing `data/backups/` files to retain your saved presets and backups.
 
 ## Advanced Ratio Calculator
 
