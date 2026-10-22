@@ -71,6 +71,26 @@
         {"width": 864, "height": 1152},
         {"width": 720, "height": 1280}
       ]
+    },
+    {
+      "name": "MOSS",
+      "presets": [
+        {"width": 1024, "height": 1024},
+        {"width": 1248, "height": 1248},
+        {"width": 1456, "height": 1456},
+        {"width": 880, "height": 1184},
+        {"width": 1088, "height": 1456},
+        {"width": 1248, "height": 1680},
+        {"width": 832, "height": 1248},
+        {"width": 1024, "height": 1536},
+        {"width": 1184, "height": 1776},
+        {"width": 768, "height": 1360},
+        {"width": 944, "height": 1680},
+        {"width": 1088, "height": 1936},
+        {"width": 720, "height": 1456},
+        {"width": 880, "height": 1776},
+        {"width": 1024, "height": 2048}
+      ]
     }
   ]
 }

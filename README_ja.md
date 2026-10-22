@@ -8,6 +8,16 @@
 
 Forge Neo／reForgeのtxt2img・img2img向け、コンパクトな解像度プリセット拡張です。
 
+## What's New — v1.0.0（2026-10-22）
+
+- `MOSS` Profileを追加。公式推奨の1M・1.5M・2M画素に基づく正方形3件・縦長12件の計15件を収録。横長は既存の縦横切り替えで利用できます。
+- 現在の解像度・MPを操作行の左端へ移動し、0件のUser行を非表示にして高さを削減。
+- Advanced Ratio Calculatorは折りたたみ式を維持し、QuickをRatioの隣へ移動。保存先パスの行を削除し、幅が足りない場合は折り返します。
+- Profile Editorの上限を14件から15件へ拡張。MOSSの全15件を編集・保存できます。
+- 既存Profile、保存済みプリセット、設定、初期Profileを保持します。
+
+拡張を更新後、Forge Neo／reForgeを再起動し、ブラウザを再読み込みしてください。編集済み`data/profile_overrides.json`は引き続き優先されます。該当する場合はProfile Editorで、下記一覧のMOSSを追加してください。
+
 ## 対応環境
 
 - Forge Neo：動作確認済み
@@ -50,6 +60,24 @@ Forge Neo／reForgeのtxt2img・img2img向け、コンパクトな解像度プ�
 WebUI側の`Resolution Step`が`64`でも、全11件を表の寸法のまま適用します。Presetの寸法を丸めたり、WebUI側の設定を変更したりしません。標準Width／Heightスライダーの範囲外だけは利用不可のままです。
 
 `data/profile_overrides.json`に編集済みProfileを保存している場合は、その内容が標準Profileより優先されます。既存の設定を残して使うには、Profile Editorで`Krea2`を作成し、上記の寸法を追加してください。
+
+## MOSS Profile
+
+`MOSS`はMOSS-Image用の正方形3件・縦長12件です。横長は選択中のPresetの再クリック、または標準Width／Height入れ替えで使えます。
+
+公式推奨の1M・1.5M・2M画素を、公式Gradioと同じ方法で16単位に丸めた寸法です。比率と画素数は概算です。 [Official guide](https://github.com/OpenMOSS/MOSS-Image/blob/main/USERGUIDE.md) · [Calculation](https://github.com/OpenMOSS/MOSS-Image/blob/main/gradio_presets.py)
+
+| Ratio | 1M | 1.5M | 2M |
+| --- | --- | --- | --- |
+| 1:1 | 1024×1024 | 1248×1248 | 1456×1456 |
+| 3:4 | 880×1184 | 1088×1456 | 1248×1680 |
+| 2:3 | 832×1248 | 1024×1536 | 1184×1776 |
+| 9:16 | 768×1360 | 944×1680 | 1088×1936 |
+| 1:2 | 720×1456 | 880×1776 | 1024×2048 |
+
+保存済み`data/profile_overrides.json`がある場合は既存設定を優先します。MOSSが表示されない場合は、Profile Editorで上記15件を追加してください。
+
+現在の解像度とMPは操作行の左端に表示します。User行は保存済みプリセットがある場合だけ表示します。Advanced Ratio Calculatorは初期状態で閉じ、Ratioの隣にQuickを配置して幅に応じて折り返します。生成画面内の保存先パス表示は省略しています。
 
 ## 配置
 

@@ -130,6 +130,37 @@ class ResolutionUITests(unittest.TestCase):
                     self.build_ui(tab, selected_profile=selected)
                     self.assert_unified_preset_row(selected)
 
+    def test_moss_fifteen_sizes_toggle_and_undo_on_both_tabs(self):
+        self.assertEqual(len(self.profiles["MOSS"]), 15)
+        self.assertEqual(self.profiles["MOSS"][-1], (1024, 2048))
+        for tab in (False, True):
+            self.build_ui(tab, selected_profile="MOSS")
+            for index, (width, height) in enumerate(self.profiles["MOSS"]):
+                button = self.by_class("fnp__preset_button")[index]
+                self.assertTrue(button.is_visible())
+                self.assertTrue(button.interactive)
+                button.trigger("click")
+                self.assertEqual((self.width.value, self.height.value), (width, height))
+                button.trigger("click")
+                self.assertEqual((self.width.value, self.height.value), (height, width))
+                self.by_class("fnp__undo_button")[0].trigger("click")
+                self.assertEqual((self.width.value, self.height.value), (width, height))
+
+    def test_compact_controls_keep_current_visible_without_user_presets(self):
+        for tab in (False, True):
+            self.build_ui(tab)
+            self.assertFalse(self.by_class("fnp__user_row")[0].is_visible())
+            current = self.by_class("fnp__current_info")[0]
+            self.assertTrue(current.is_visible())
+            self.assertIs(current.parent, self.by_class("fnp__profile_group")[0])
+            self.assertIs(current.parent.children[0], current)
+            self.assertNotIn("Current", current.value)
+            self.assertFalse(self.by_class("fnp__path_note"))
+            ratio = self.by_class("fnp__ratio_input")[0]
+            quick = self.by_class("fnp__ratio_quick_label")[0]
+            self.assertIs(ratio.parent, quick.parent)
+            self.assertEqual(ratio.parent.children.index(quick), ratio.parent.children.index(ratio) + 1)
+
     def test_profile_switches_keep_all_fourteen_slots_in_continuous_order(self):
         self.profiles["Custom14"] = [(512 + 8 * index, 1024) for index in range(14)]
         for tab in (False, True):
@@ -238,6 +269,7 @@ class ResolutionUITests(unittest.TestCase):
                 with self.subTest(img2img=tab):
                     self.build_ui(tab)
                     self.assertEqual(self.by_class("fnp__user_count")[0].value, "User (1)")
+                    self.assertTrue(self.by_class("fnp__user_row")[0].is_visible())
                     button = self.by_class("fnp__user_button")[0]
                     self.assertEqual(button.value, "Portrait")
                     self.assertTrue(button.interactive)

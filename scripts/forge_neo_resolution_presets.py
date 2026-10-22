@@ -28,7 +28,7 @@ BEHAVIOR_SETTINGS_PATH = DATA_PATH / "behavior_settings.json"
 HISTORY_PATH = DATA_PATH / "resolution_history.json"
 
 MAX_USER_PRESETS = 8
-MAX_BUILTIN_PRESETS = 14
+MAX_BUILTIN_PRESETS = 15
 MAX_NAME_LENGTH = 32
 MIN_DIMENSION = 16
 MAX_DIMENSION = 16384
@@ -412,11 +412,11 @@ def _current_info(width: Any, height: Any) -> str:
         width_value = int(width)
         height_value = int(height)
     except (TypeError, ValueError):
-        return "Current —"
+        return "—"
     if not _is_dimension(width_value) or not _is_dimension(height_value):
-        return "Current —"
+        return "—"
     megapixels = width_value * height_value / 1_000_000
-    return f"Current `{width_value}×{height_value}` · {megapixels:.2f} MP"
+    return f"`{width_value}×{height_value}` · {megapixels:.2f} MP"
 
 
 def _resolution_pair(width: Any, height: Any) -> tuple[int, int] | None:
@@ -586,6 +586,10 @@ class ForgeNeoResolutionPresets(scripts.Script):
                     preset_buttons.append(button)
 
             with gr.Row(elem_classes=["fnp__profile_group"]):
+                current_info = gr.Markdown(
+                    _current_info(initial_width, initial_height),
+                    elem_classes=["fnp__current_info"],
+                )
                 randomize_button = gr.Button(
                     "Randomize",
                     size="sm",
@@ -612,7 +616,7 @@ class ForgeNeoResolutionPresets(scripts.Script):
                     elem_classes=["fnp__profile"],
                 )
 
-            with gr.Row(elem_classes=["fnp__user_row"]):
+            with gr.Row(visible=bool(initial_user_presets), elem_classes=["fnp__user_row"]):
                 gr.Markdown(f"User ({len(initial_user_presets)})", elem_classes=["fnp__user_count"])
                 user_buttons: list[Any] = []
                 for index in range(MAX_USER_PRESETS):
@@ -637,10 +641,6 @@ class ForgeNeoResolutionPresets(scripts.Script):
                             elem_classes=["fnp__user_button"],
                         )
                     )
-                current_info = gr.Markdown(
-                    _current_info(initial_width, initial_height),
-                    elem_classes=["fnp__current_info"],
-                )
 
             quick_ratio_buttons: list[Any] = []
             with gr.Accordion(
@@ -657,6 +657,11 @@ class ForgeNeoResolutionPresets(scripts.Script):
                         max_lines=1,
                         elem_classes=["fnp__ratio_input"],
                     )
+                    gr.Markdown("Quick", elem_classes=["fnp__ratio_quick_label"])
+                    for quick_ratio in ("1:1", "4:5", "3:4", "2:3", "9:16"):
+                        quick_ratio_buttons.append(
+                            gr.Button(quick_ratio, size="sm", elem_classes=["fnp__ratio_quick_button"])
+                        )
                     gr.Markdown("Area: current", elem_classes=["fnp__ratio_basis"])
                     gr.Markdown("Round", elem_classes=["fnp__rounding_label"])
                     rounding = gr.Dropdown(
@@ -670,16 +675,6 @@ class ForgeNeoResolutionPresets(scripts.Script):
                     )
                     result = gr.Markdown("—", elem_classes=["fnp__ratio_result"])
                     apply_ratio = gr.Button("Apply", elem_classes=["fnp__apply_button"])
-                with gr.Row(elem_classes=["fnp__ratio_quick_row"]):
-                    gr.Markdown("Quick", elem_classes=["fnp__ratio_quick_label"])
-                    for quick_ratio in ("1:1", "4:5", "3:4", "2:3", "9:16"):
-                        quick_ratio_buttons.append(
-                            gr.Button(quick_ratio, size="sm", elem_classes=["fnp__ratio_quick_button"])
-                        )
-                gr.Markdown(
-                    "Built-in: `profiles.json`  |  User: `data/user_presets.json`  |  Backup: `data/backups/`",
-                    elem_classes=["fnp__path_note"],
-                )
 
         def user_button_updates(current_width, current_height):
             presets = _load_user_presets()

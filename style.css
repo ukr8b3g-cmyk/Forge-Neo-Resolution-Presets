@@ -19,7 +19,7 @@
 
 #fnp__txt2img_container .fnp__ratio_row,
 #fnp__img2img_container .fnp__ratio_row {
-    flex-wrap: nowrap !important;
+    flex-wrap: wrap !important;
 }
 
 #fnp__txt2img_container .fnp__preset_row > *,
@@ -33,11 +33,8 @@
 
 #fnp__txt2img_container .fnp__user_row,
 #fnp__img2img_container .fnp__user_row {
-    min-height: 31px !important;
     align-content: center !important;
-    flex-wrap: nowrap !important;
-    height: 32.4px !important;
-    max-height: 32.4px !important;
+    flex-wrap: wrap !important;
     overflow: visible !important;
 }
 
@@ -210,29 +207,16 @@
 
 #fnp__txt2img_container .fnp__current_info,
 #fnp__img2img_container .fnp__current_info {
-    width: 230px !important;
-    min-width: 230px !important;
-    max-width: 230px !important;
-    flex: 0 0 230px !important;
-    margin: 0 0 0 auto !important;
+    width: auto !important;
+    min-width: 0 !important;
+    flex: 0 0 auto !important;
+    margin: 0 auto 0 0 !important;
     padding: 0 !important;
     color: var(--body-text-color-subdued) !important;
     font-size: 0.72em !important;
     white-space: nowrap !important;
     overflow: hidden !important;
     text-overflow: ellipsis !important;
-}
-
-#fnp__txt2img_container .fnp__ratio_quick_row,
-#fnp__img2img_container .fnp__ratio_quick_row {
-    align-items: center;
-    gap: 6px !important;
-    flex-wrap: nowrap !important;
-}
-
-#fnp__txt2img_container .fnp__ratio_quick_row > *,
-#fnp__img2img_container .fnp__ratio_quick_row > * {
-    flex: 0 0 auto !important;
 }
 
 #fnp__txt2img_container .fnp__ratio_quick_label,
@@ -273,20 +257,12 @@
 
 #fnp__txt2img_container .fnp__ratio_result,
 #fnp__img2img_container .fnp__ratio_result {
+    width: auto !important;
     min-width: 72px !important;
     margin: 0 0 0 auto !important;
     padding: 0 !important;
     font-size: 0.9em !important;
     white-space: nowrap !important;
-}
-
-#fnp__txt2img_container .fnp__path_note,
-#fnp__img2img_container .fnp__path_note {
-    margin: 1px 0 0 !important;
-    padding: 0 2px !important;
-    color: var(--body-text-color-subdued) !important;
-    font-size: 0.72em !important;
-    line-height: 1.2 !important;
 }
 
 #fnp__txt2img_container .fnp__ratio_accordion > .label-wrap,

@@ -122,7 +122,7 @@
         if (normalizedName) names.set(normalizedName, index);
         const presets = Array.isArray(profile.presets) ? profile.presets : [];
         if (!presets.length) global.push(`${name || `Profile ${index + 1}`}: Presetは1件以上必要です`);
-        if (presets.length > 14) global.push(`${name || `Profile ${index + 1}`}: Presetは14件以内です`);
+        if (presets.length > 15) global.push(`${name || `Profile ${index + 1}`}: Presetは15件以内です`);
         const pairs = new Set();
         presets.forEach((preset, presetIndex) => {
           const errors = [];
@@ -159,7 +159,7 @@
         const errors = validationErrors.rows[profileKey(profileIndex, index)] || [];
         const invalid = errors.length ? " invalid" : "";
         const deleteDisabled = presets.length <= 1 ? " disabled" : "";
-        const duplicateDisabled = presets.length >= 14 ? " disabled" : "";
+        const duplicateDisabled = presets.length >= 15 ? " disabled" : "";
         const width = Number.isFinite(Number(preset.width)) ? preset.width : "";
         const height = Number.isFinite(Number(preset.height)) ? preset.height : "";
         return `<div class="fnp-settings-preset-row${invalid}" draggable="true" tabindex="0" data-index="${index}" aria-label="Preset ${index + 1}">
@@ -175,8 +175,8 @@
       }).join("");
       const addButton = root.querySelector('[data-action="add-preset"]');
       if (addButton) {
-        addButton.disabled = presets.length >= 14;
-        addButton.title = presets.length >= 14 ? "A Profile can contain up to 14 presets" : "Add a preset";
+        addButton.disabled = presets.length >= 15;
+        addButton.title = presets.length >= 15 ? "A Profile can contain up to 15 presets" : "Add a preset";
       }
       const deleteProfileButton = root.querySelector('[data-action="delete-profile"]');
       if (deleteProfileButton) deleteProfileButton.disabled = profiles.length <= 1;
@@ -344,13 +344,13 @@
           renderProfiles();
         } else if (action === "add-preset") {
           const profile = selectedProfile();
-          if (!profile || profile.presets.length >= 14) throw new Error("A Profile can contain up to 14 presets");
+          if (!profile || profile.presets.length >= 15) throw new Error("A Profile can contain up to 15 presets");
           profile.presets.push(findFreePreset(profile));
           markDirty();
           renderProfiles();
         } else if (action === "duplicate-preset") {
           const profile = selectedProfile();
-          if (!profile || profile.presets.length >= 14) throw new Error("A Profile can contain up to 14 presets");
+          if (!profile || profile.presets.length >= 15) throw new Error("A Profile can contain up to 15 presets");
           const index = Number(button.dataset.index);
           profile.presets.splice(index + 1, 0, {...profile.presets[index]});
           markDirty();

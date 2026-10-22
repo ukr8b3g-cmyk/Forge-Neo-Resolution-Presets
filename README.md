@@ -7,6 +7,16 @@ Documentation is available in English and Japanese. The extension UI uses compac
 
 Compact resolution presets for Forge Neo and reForge txt2img and img2img.
 
+## What's New — v1.0.0 (2026-10-22)
+
+- Added `MOSS` with 15 MOSS-Image presets: three square and twelve portrait sizes across the official 1M, 1.5M and 2M pixel tiers. Use the existing orientation toggle for landscape.
+- Made the panel more compact: current dimensions and MP sit at the left of the action row; the empty User row is hidden.
+- Moved Quick ratios beside Ratio in the collapsible Advanced Ratio Calculator and removed its storage-path footer. Controls wrap when space is limited.
+- Raised the Profile Editor limit from 14 to 15 presets so all MOSS sizes survive editing and saving.
+- Existing profiles, saved presets, settings and the default profile are preserved.
+
+Update the extension, restart Forge Neo/reForge, and refresh the browser. Edited `data/profile_overrides.json` files retain priority; add MOSS through the Profile Editor if you use an override. See the MOSS table below.
+
 ## Compatibility
 
 - Forge Neo: verified
@@ -49,6 +59,24 @@ The base portrait candidates follow [Krea2 Harness](https://github.com/ANe5s/Com
 All 11 presets are applied at their exact listed dimensions, including when the host's `Resolution Step` is `64`. The extension does not round preset sizes or change the host's settings. Presets outside the native Width/Height range remain unavailable.
 
 If you have saved edited Profiles in `data/profile_overrides.json`, those Profiles take priority over the built-ins. Add `Krea2` through the Profile Editor using the sizes above to keep your existing configuration.
+
+## MOSS profile
+
+`MOSS` contains three square and twelve portrait presets for MOSS-Image. Click the selected preset again or swap the native Width/Height controls for landscape.
+
+These sizes use the official Gradio calculation, rounding the recommended 1M, 1.5M and 2M pixel tiers to multiples of 16. Ratios and pixel areas are approximate. [Official guide](https://github.com/OpenMOSS/MOSS-Image/blob/main/USERGUIDE.md) · [Calculation](https://github.com/OpenMOSS/MOSS-Image/blob/main/gradio_presets.py)
+
+| Ratio | 1M | 1.5M | 2M |
+| --- | --- | --- | --- |
+| 1:1 | 1024×1024 | 1248×1248 | 1456×1456 |
+| 3:4 | 880×1184 | 1088×1456 | 1248×1680 |
+| 2:3 | 832×1248 | 1024×1536 | 1184×1776 |
+| 9:16 | 768×1360 | 944×1680 | 1088×1936 |
+| 1:2 | 720×1456 | 880×1776 | 1024×2048 |
+
+Saved `data/profile_overrides.json` files retain priority. If MOSS is absent, add the 15 sizes above through the Profile Editor to preserve your edited configuration.
+
+The current dimensions and MP appear at the left of the action row. The User row appears only when saved user presets exist. Advanced Ratio Calculator starts collapsed; Quick follows Ratio on the same wrapping row. Storage paths are omitted from the generation panel.
 
 ## Install
 
