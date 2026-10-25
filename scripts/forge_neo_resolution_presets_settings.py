@@ -58,10 +58,12 @@ def _normalise_document(raw: Any) -> dict[str, Any]:
     for item in raw.get("profiles", []):
         if not isinstance(item, dict):
             continue
-        name = str(item.get("name", "")).strip()[:MAX_NAME_LENGTH]
+        name = str(item.get("name", "")).strip()
+        if not name or len(name) > MAX_NAME_LENGTH:
+            raise ValueError("Profile名は1～32文字で入力してください")
         key = name.casefold()
-        if not name or key in names:
-            continue
+        if key in names:
+            raise ValueError(f"Profile名が重複しています: {name}")
         presets: list[dict[str, int]] = []
         pairs: set[tuple[int, int]] = set()
         for preset in item.get("presets", []):
@@ -306,7 +308,7 @@ SETTINGS_MARKUP = r"""
   <div class="fnp-settings-dialog" id="fnp-settings-profile-dialog" role="dialog" aria-modal="true" aria-labelledby="fnp-settings-profile-dialog-title" hidden>
     <div class="fnp-settings-dialog-panel">
       <h3 id="fnp-settings-profile-dialog-title">New profile</h3>
-      <label>Profile name <input id="fnp-settings-profile-name" type="text" maxlength="32" autocomplete="off" placeholder="e.g. SDXL Custom"></label>
+      <label>Profile name <input id="fnp-settings-profile-name" type="text" autocomplete="off" placeholder="e.g. SDXL Custom"></label>
       <div class="fnp-settings-dialog-error" id="fnp-settings-profile-dialog-error" role="alert"></div>
       <div class="fnp-settings-dialog-actions">
         <button type="button" data-action="cancel-profile-dialog">Cancel</button>

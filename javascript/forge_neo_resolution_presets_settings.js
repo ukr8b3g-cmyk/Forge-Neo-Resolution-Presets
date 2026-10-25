@@ -50,6 +50,8 @@
     let profileIndex = 0;
     let dragIndex = null;
     let dirty = false;
+    let revision = 0;
+    let savingProfiles = false;
     let lastDeletedPreset = null;
     let validationErrors = {global: [], rows: {}};
     dirtyReaders.set(root, () => dirty);
@@ -76,19 +78,26 @@
     };
 
     const markDirty = () => {
+      revision += 1;
       dirty = true;
       validationErrors = {global: [], rows: {}};
       setStatus("Unsaved changes", "dirty");
     };
 
+    // This is an early UI check. The server additionally validates Unicode casefold
+    // collisions atomically; a rejected request must leave this draft intact.
     const isUsedName = name => state.profiles.profiles.some(profile => profile.name.toLowerCase() === name.toLowerCase());
-    const uniqueProfileName = baseName => {
-      const base = baseName.trim() || "New Profile";
-      if (!isUsedName(base)) return base;
-      let suffix = 2;
-      let candidate = `${base} ${suffix}`;
-      while (isUsedName(candidate)) candidate = `${base} ${++suffix}`;
-      return candidate;
+    const nameCharacters = name => Array.from(name);
+    const uniqueProfileName = sourceName => {
+      const source = sourceName.trim() || "New Profile";
+      let number = 1;
+      while (true) {
+        const suffix = number === 1 ? " Copy" : ` Copy ${number}`;
+        const base = nameCharacters(source).slice(0, 32 - suffix.length).join("").trimEnd();
+        const candidate = `${base}${suffix}`;
+        if (!isUsedName(candidate)) return candidate;
+        number += 1;
+      }
     };
 
     const preferredResolutions = [
@@ -116,7 +125,7 @@
       profiles.forEach((profile, index) => {
         const name = String(profile.name ?? "").trim();
         if (!name) global.push(`Profile ${index + 1}: 名前を入力してください`);
-        else if (name.length > 32) global.push(`Profile ${index + 1}: 名前は32文字以内です`);
+        else if (nameCharacters(name).length > 32) global.push(`Profile ${index + 1}: 名前は32文字以内です`);
         const normalizedName = name.toLowerCase();
         if (normalizedName && names.has(normalizedName)) global.push(`Profile名が重複しています: ${name}`);
         if (normalizedName) names.set(normalizedName, index);
@@ -220,7 +229,7 @@
 
     const createProfile = () => {
       const name = profileNameInput.value.trim();
-      if (!name || name.length > 32) {
+      if (!name || nameCharacters(name).length > 32) {
         profileDialogError.textContent = "Profile name must be 1–32 characters.";
         return;
       }
@@ -310,6 +319,8 @@
       const button = event.target.closest("button[data-action]");
       if (!button) return;
       const action = button.dataset.action;
+      // Keep editing available, but serialize saves and explicit draft replacements.
+      if (savingProfiles && ["save-profiles", "restore-defaults", "restore-backup"].includes(action)) return;
       try {
         if (action === "add-profile") {
           openProfileDialog();
@@ -321,7 +332,7 @@
           const source = selectedProfile();
           if (!source) return;
           state.profiles.profiles.splice(profileIndex + 1, 0, {
-            name: uniqueProfileName(`${source.name} Copy`),
+            name: uniqueProfileName(source.name),
             presets: source.presets.map(preset => ({...preset}))
           });
           profileIndex += 1;
@@ -380,14 +391,30 @@
             setStatus(`Could not save: ${firstError}`, "error");
             return;
           }
-          const response = await api("profiles", {method: "POST", body: JSON.stringify(state.profiles)});
-          state = response.state;
-          profileIndex = Math.max(0, state.profiles.profiles.findIndex(profile => profile.name === state.profiles.default_profile));
-          dirty = false;
-          lastDeletedPreset = null;
-          validationErrors = {global: [], rows: {}};
-          render();
-          setStatus(response.message || "Saved · backup created", "saved");
+          const sentRevision = revision;
+          savingProfiles = true;
+          button.disabled = true;
+          try {
+            const response = await api("profiles", {method: "POST", body: JSON.stringify(state.profiles)});
+            // Other requests may have updated history or behavior while saving.
+            state.backups = response.state.backups;
+            renderBackups();
+            if (revision === sentRevision) {
+              const selectedName = selectedProfile()?.name;
+              state.profiles = response.state.profiles;
+              profileIndex = Math.max(0, state.profiles.profiles.findIndex(profile => profile.name === selectedName));
+              dirty = false;
+              lastDeletedPreset = null;
+              validationErrors = {global: [], rows: {}};
+              renderProfiles();
+              setStatus(response.message || "Saved · backup created", "saved");
+            } else {
+              setStatus("Submitted changes saved · Newer edits remain unsaved", "dirty", Boolean(lastDeletedPreset));
+            }
+          } finally {
+            savingProfiles = false;
+            button.disabled = false;
+          }
         } else if (action === "restore-defaults") {
           if (!confirm("Restore built-in profiles? Unsaved changes will be lost.")) return;
           const response = await api("restore-defaults", {method: "POST"});
@@ -398,9 +425,8 @@
           render();
           setStatus(response.message || "Built-in profiles restored", "saved");
         } else if (action === "backup") {
-          const draftProfiles = state.profiles;
           const response = await api("backup", {method: "POST"});
-          state = {...state, ...response.state, profiles: draftProfiles};
+          state.backups = response.state.backups;
           renderBackups();
           setStatus(dirty ? "Backup created · Unsaved changes" : (response.message || "Backup created"), dirty ? "dirty" : "saved");
         } else if (action === "restore-backup") {
@@ -422,9 +448,9 @@
         } else if (action === "clear-history") {
           if (!confirm("Clear resolution history?")) return;
           const response = await api("history/clear", {method: "POST"});
-          state = response.state;
+          state.history = response.state.history;
           renderHistory();
-          setStatus(response.message || "History cleared", "saved");
+          setStatus(dirty ? "History cleared · Unsaved profile changes remain" : (response.message || "History cleared"), dirty ? "dirty" : "saved", Boolean(lastDeletedPreset));
         }
       } catch (error) {
         setStatus(error.message, "error");

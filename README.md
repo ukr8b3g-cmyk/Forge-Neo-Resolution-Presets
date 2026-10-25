@@ -7,7 +7,14 @@ Documentation is available in English and Japanese. The extension UI uses compac
 
 Compact resolution presets for Forge Neo and reForge txt2img and img2img.
 
-## What's New — v1.0.0 (2026-10-22)
+## What's New — v1.0.1 (2026-10-25)
+
+- Preserve unsaved Profile edits when clearing history or receiving a save response.
+- Reject Unicode name collisions without silently dropping Profiles or partially saving.
+- Keep duplicated Profile names within 32 Unicode characters, including Copy suffixes.
+- Existing profiles and `data/` settings are preserved. See [release notes and validation](docs/RELEASE_v1.0.1.md).
+
+## v1.0.0 (2026-10-22)
 
 - Added `MOSS` with 15 MOSS-Image presets: three square and twelve portrait sizes across the official 1M, 1.5M and 2M pixel tiers. Use the existing orientation toggle for landscape.
 - Made the panel more compact: current dimensions and MP sit at the left of the action row; the empty User row is hidden.
