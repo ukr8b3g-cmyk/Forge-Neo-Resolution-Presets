@@ -33,7 +33,7 @@ async function setup(names = ['Test']) {
     fetch: async (url, opts) => {
       const route = url.split('/settings/')[1];
       requests.push({route, body: opts.body && JSON.parse(opts.body)});
-      const rejected = route === 'profiles' && fail;
+      const rejected = ['profiles', 'restore-defaults', 'restore-backup'].includes(route) && fail;
       if (route === 'profiles' && !rejected) saved.profiles = JSON.parse(opts.body);
       if (route === 'history/clear') saved.history = [];
       if (route === 'profiles' || route === 'backup') saved.backups = ['profiles-backup.json'];
@@ -167,4 +167,42 @@ test('backup response cannot replace edits added during save', async () => {
   assert.equal(h.dirty, true); await h.click('save-profiles');
   assert.equal(h.post[1].body.profiles[0].presets[0].width, 1536);
   assert.equal(h.post[1].body.profiles[1].name, 'AfterSave');
+});
+
+for (const action of ['restore-defaults', 'restore-backup']) {
+  test(`${action} preserves edits and unrelated history during a delayed response`, async () => {
+    const h = await setup();
+    h.nodes.get('#fnp-settings-backup').value = 'profiles-backup.json';
+    h.hold(action); const pending = h.click(action); await flush();
+    h.edit(1536); await h.click('clear-history');
+    const before = h.requests.length;
+    await h.click('save-profiles'); await h.click('restore-defaults'); await h.click('restore-backup');
+    assert.equal(h.requests.length, before);
+    h.release(); await pending;
+    assert.equal(h.dirty, true);
+    assert.match(h.nodes.get('#fnp-settings-history').innerHTML, /No history/);
+    assert.equal(h.button(action).disabled, false);
+    await h.click('save-profiles');
+    assert.equal(h.post[0].body.profiles[0].presets[0].width, 1536);
+  });
+  test(`${action} failure releases busy and retains draft for retry`, async () => {
+    const h = await setup(); h.edit(1536);
+    h.nodes.get('#fnp-settings-backup').value = 'profiles-backup.json';
+    h.rejectSave(); await h.click(action);
+    assert.equal(h.dirty, true); assert.equal(h.button(action).disabled, false);
+    h.allowSave(); await h.click(action);
+    assert.equal(h.dirty, false);
+  });
+}
+
+test('failed restoration preserves preset deletion Undo', async () => {
+  const h = await setup(); await h.click('add-preset'); await h.click('delete-preset');
+  h.rejectSave(); await h.click('restore-defaults');
+  h.allowSave(); await h.click('undo-delete'); await h.click('save-profiles');
+  assert.equal(h.post[0].body.profiles[0].presets.length, 2);
+});
+test('successful restore without newer edits clears stale deletion Undo', async () => {
+  const h = await setup(); await h.click('add-preset'); await h.click('delete-preset');
+  await h.click('restore-defaults'); await h.click('undo-delete'); await h.click('save-profiles');
+  assert.equal(h.post[0].body.profiles[0].presets.length, 1);
 });

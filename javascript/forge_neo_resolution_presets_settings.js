@@ -315,6 +315,35 @@
       if (event.key === "Enter" && event.target === profileNameInput) createProfile();
     });
 
+    // Serialize profile writes, while retaining any edits made after submission.
+    async function mutateProfiles(button, path, body, restoring = false) {
+      const sentRevision = revision;
+      const selectedName = selectedProfile()?.name;
+      savingProfiles = true;
+      button.disabled = true;
+      const deletedAtSubmit = lastDeletedPreset;
+      try {
+        const response = await api(path, {method: "POST", ...(body === undefined ? {} : {body: JSON.stringify(body)})});
+        state.backups = response.state.backups;
+        renderBackups();
+        if (restoring && lastDeletedPreset === deletedAtSubmit) lastDeletedPreset = null;
+        if (revision === sentRevision) {
+          state.profiles = response.state.profiles;
+          profileIndex = restoring ? 0 : Math.max(0, state.profiles.profiles.findIndex(profile => profile.name === selectedName));
+          dirty = false;
+          lastDeletedPreset = null;
+          validationErrors = {global: [], rows: {}};
+          renderProfiles();
+          setStatus(response.message || (restoring ? "Profiles restored" : "Saved · backup created"), "saved");
+        } else {
+          setStatus("Submitted changes saved · Newer edits remain unsaved", "dirty", Boolean(lastDeletedPreset));
+        }
+      } finally {
+        savingProfiles = false;
+        button.disabled = false;
+      }
+    }
+
     root.addEventListener("click", async event => {
       const button = event.target.closest("button[data-action]");
       if (!button) return;
@@ -391,39 +420,10 @@
             setStatus(`Could not save: ${firstError}`, "error");
             return;
           }
-          const sentRevision = revision;
-          savingProfiles = true;
-          button.disabled = true;
-          try {
-            const response = await api("profiles", {method: "POST", body: JSON.stringify(state.profiles)});
-            // Other requests may have updated history or behavior while saving.
-            state.backups = response.state.backups;
-            renderBackups();
-            if (revision === sentRevision) {
-              const selectedName = selectedProfile()?.name;
-              state.profiles = response.state.profiles;
-              profileIndex = Math.max(0, state.profiles.profiles.findIndex(profile => profile.name === selectedName));
-              dirty = false;
-              lastDeletedPreset = null;
-              validationErrors = {global: [], rows: {}};
-              renderProfiles();
-              setStatus(response.message || "Saved · backup created", "saved");
-            } else {
-              setStatus("Submitted changes saved · Newer edits remain unsaved", "dirty", Boolean(lastDeletedPreset));
-            }
-          } finally {
-            savingProfiles = false;
-            button.disabled = false;
-          }
+          await mutateProfiles(button, "profiles", state.profiles);
         } else if (action === "restore-defaults") {
           if (!confirm("Restore built-in profiles? Unsaved changes will be lost.")) return;
-          const response = await api("restore-defaults", {method: "POST"});
-          state = response.state;
-          profileIndex = 0;
-          dirty = false;
-          validationErrors = {global: [], rows: {}};
-          render();
-          setStatus(response.message || "Built-in profiles restored", "saved");
+          await mutateProfiles(button, "restore-defaults", undefined, true);
         } else if (action === "backup") {
           const response = await api("backup", {method: "POST"});
           state.backups = response.state.backups;
@@ -431,13 +431,7 @@
           setStatus(dirty ? "Backup created · Unsaved changes" : (response.message || "Backup created"), dirty ? "dirty" : "saved");
         } else if (action === "restore-backup") {
           if (!backupSelect.value || !confirm("Restore the selected backup? Unsaved changes will be lost.")) return;
-          const response = await api("restore-backup", {method: "POST", body: JSON.stringify({name: backupSelect.value})});
-          state = response.state;
-          profileIndex = 0;
-          dirty = false;
-          validationErrors = {global: [], rows: {}};
-          render();
-          setStatus(response.message || "Backup restored", "saved");
+          await mutateProfiles(button, "restore-backup", {name: backupSelect.value}, true);
         } else if (action === "save-behavior") {
           const response = await api("behavior", {method: "POST", body: JSON.stringify({
             randomize_default: root.querySelector("#fnp-settings-random-default").checked,

@@ -182,3 +182,12 @@ Advanced Ratio Calculatorは現在のResolution Stepと互換する丸め幅だ�
 ## ライセンス
 
 MIT Licenseです。詳細は[LICENSE](LICENSE)を参照してください。
+
+### Profile復元と履歴の整合性
+
+Profile保存と2種類の復元は同時実行しません。復元中も編集でき、遅い応答で
+新しい未保存編集や履歴・動作設定を巻き戻しません。復元失敗時はDraftと削除Undoを保持します。
+Settingsと生成は同じ検証・読込回復規則を使い、不正なoverrideは同梱Profile、
+次に最小の既定Profileへ戻します。不正ファイルは上書きしません。各Profileは最大15件です。
+履歴の記録・消去は同じプロセス内ロックを共有し、atomic保存を維持します。
+同じデータフォルダーを複数Forgeプロセスが共有する場合の排他は保証対象外です。

@@ -6,7 +6,6 @@ import math
 import os
 import random
 import tempfile
-import threading
 from datetime import datetime
 from fractions import Fraction
 from pathlib import Path
@@ -35,7 +34,7 @@ MAX_DIMENSION = 16384
 DEFAULT_ROUNDING = 8
 SUPPORTED_RESOLUTION_STEPS = (8, 16, 32, 64, 128, 256)
 MAX_HISTORY = 12
-HISTORY_LOCK = threading.Lock()
+from fnp_resolution_data import HISTORY_LOCK, default_profiles as _default_profiles, load_profiles_document
 
 
 def register_click_compatible(component, *, js_code=None, **kwargs):
@@ -58,31 +57,6 @@ def register_click_compatible(component, *, js_code=None, **kwargs):
 
     return component.click(**kwargs)
 
-
-def _default_profiles() -> dict[str, Any]:
-    return {
-        "default_profile": "Anima",
-        "profiles": [
-            {
-                "name": "Anima",
-                "presets": [
-                    {"width": 1024, "height": 1024},
-                    {"width": 1280, "height": 1280},
-                    {"width": 896, "height": 1152},
-                    {"width": 1024, "height": 1344},
-                    {"width": 960, "height": 1280},
-                    {"width": 832, "height": 1152},
-                    {"width": 832, "height": 1216},
-                    {"width": 1024, "height": 1536},
-                    {"width": 768, "height": 1280},
-                    {"width": 1136, "height": 1424},
-                    {"width": 1104, "height": 1472},
-                    {"width": 1040, "height": 1552},
-                    {"width": 960, "height": 1696},
-                ],
-            }
-        ],
-    }
 
 
 def _is_dimension(value: Any) -> bool:
@@ -177,46 +151,10 @@ def _rounding_choices(native_step: int) -> list[int]:
 
 
 def _load_profiles() -> tuple[list[str], dict[str, list[tuple[int, int]]], str]:
-    source_path = PROFILE_OVERRIDES_PATH if PROFILE_OVERRIDES_PATH.exists() else PROFILES_PATH
-    try:
-        raw = json.loads(source_path.read_text(encoding="utf-8"))
-    except (OSError, ValueError, TypeError):
-        try:
-            raw = json.loads(PROFILES_PATH.read_text(encoding="utf-8"))
-        except (OSError, ValueError, TypeError):
-            raw = _default_profiles()
-
-    profile_names: list[str] = []
-    profiles: dict[str, list[tuple[int, int]]] = {}
-    for item in raw.get("profiles", []):
-        if not isinstance(item, dict):
-            continue
-        name = str(item.get("name", "")).strip()
-        if not name or name in profiles:
-            continue
-        values: list[tuple[int, int]] = []
-        for preset in item.get("presets", []):
-            if not isinstance(preset, dict):
-                continue
-            width = preset.get("width")
-            height = preset.get("height")
-            if _is_dimension(width) and _is_dimension(height):
-                values.append((width, height))
-        if values:
-            profile_names.append(name)
-            profiles[name] = values[:MAX_BUILTIN_PRESETS]
-
-    if not profile_names:
-        fallback = _default_profiles()["profiles"][0]
-        name = fallback["name"]
-        profile_names = [name]
-        profiles[name] = [(p["width"], p["height"]) for p in fallback["presets"]]
-
-    default_profile = str(raw.get("default_profile", "")).strip()
-    if default_profile not in profiles:
-        default_profile = profile_names[0]
-    return profile_names, profiles, default_profile
-
+    document = load_profiles_document(PROFILE_OVERRIDES_PATH, PROFILES_PATH)
+    profiles = {item["name"]: [(p["width"], p["height"]) for p in item["presets"]]
+                for item in document["profiles"]}
+    return list(profiles), profiles, document["default_profile"]
 
 def _load_behavior_settings() -> dict[str, bool]:
     try:

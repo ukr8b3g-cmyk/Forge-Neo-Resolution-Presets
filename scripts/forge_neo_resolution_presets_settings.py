@@ -13,6 +13,7 @@ from fastapi import Request
 from starlette.responses import JSONResponse
 
 from modules import script_callbacks, shared
+from fnp_resolution_data import normalise_document as _normalise_document, load_profiles_document, clear_history as _clear_history
 
 
 BASE_PATH = Path(__file__).resolve().parents[1]
@@ -49,63 +50,9 @@ def _resolution_step() -> int:
     return step if step > 0 else 8
 
 
-def _normalise_document(raw: Any) -> dict[str, Any]:
-    if not isinstance(raw, dict):
-        raise ValueError("Profile JSONが不正です")
-
-    profiles: list[dict[str, Any]] = []
-    names: set[str] = set()
-    for item in raw.get("profiles", []):
-        if not isinstance(item, dict):
-            continue
-        name = str(item.get("name", "")).strip()
-        if not name or len(name) > MAX_NAME_LENGTH:
-            raise ValueError("Profile名は1～32文字で入力してください")
-        key = name.casefold()
-        if key in names:
-            raise ValueError(f"Profile名が重複しています: {name}")
-        presets: list[dict[str, int]] = []
-        pairs: set[tuple[int, int]] = set()
-        for preset in item.get("presets", []):
-            if not isinstance(preset, dict):
-                continue
-            width = preset.get("width")
-            height = preset.get("height")
-            if not _is_dimension(width) or not _is_dimension(height):
-                continue
-            if width % 8 or height % 8:
-                raise ValueError(f"{name}: Width／Heightは8の倍数にしてください")
-            pair = (width, height)
-            if pair in pairs:
-                raise ValueError(f"{name}: 重複した解像度があります（{width}×{height}）")
-            pairs.add(pair)
-            presets.append({"width": width, "height": height})
-            if len(presets) >= MAX_PRESETS:
-                break
-        if not presets:
-            raise ValueError(f"{name}: プリセットがありません")
-        names.add(key)
-        profiles.append({"name": name, "presets": presets})
-
-    if not profiles:
-        raise ValueError("Profileがありません")
-    default_profile = str(raw.get("default_profile", "")).strip()
-    if default_profile.casefold() not in {item["name"].casefold() for item in profiles}:
-        default_profile = profiles[0]["name"]
-    else:
-        default_profile = next(
-            item["name"] for item in profiles if item["name"].casefold() == default_profile.casefold()
-        )
-    return {"default_profile": default_profile, "profiles": profiles}
-
 
 def _load_profiles_document() -> dict[str, Any]:
-    source = PROFILE_OVERRIDES_PATH if PROFILE_OVERRIDES_PATH.exists() else PROFILES_PATH
-    try:
-        return _normalise_document(_read_json(source, {}))
-    except ValueError:
-        return _normalise_document(_read_json(PROFILES_PATH, {}))
-
+    return load_profiles_document(PROFILE_OVERRIDES_PATH, PROFILES_PATH)
 
 def _write_json_atomic(path: Path, value: Any, prefix: str) -> None:
     DATA_PATH.mkdir(parents=True, exist_ok=True)
@@ -247,7 +194,7 @@ def _register_routes(_demo, app):
     @app.post("/fnp-resolution-presets/settings/history/clear")
     def clear_history():
         try:
-            HISTORY_PATH.unlink(missing_ok=True)
+            _clear_history(HISTORY_PATH)
             return _response({"ok": True, "message": "履歴を削除しました。", "state": _state()})
         except OSError as error:
             return _response({"ok": False, "message": f"履歴を削除できません: {error}"}, 400)

@@ -180,3 +180,14 @@ The calculator keeps the current total pixel area as the basis, calculates dimen
 ## License
 
 MIT License. See [LICENSE](LICENSE).
+
+### Profile restoration and history consistency
+
+Profile Save and both Restore actions are serialized. Editing may continue during
+restoration; a late response preserves newer unsaved edits and does not replace
+history or behavior. Failed restores retain the draft and deletion Undo.
+Settings and generation share profile validation and read-only recovery: invalid
+overrides fall back to the built-in profiles, then the minimal default, without
+rewriting the invalid file. Both paths retain at most 15 presets per profile.
+History recording and clearing share one process-local lock and retain atomic
+writes. This is not a guarantee for multiple Forge processes sharing a data folder.
